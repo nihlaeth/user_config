@@ -3,7 +3,7 @@ from user_config import Config, Section, StringOption, IntOption
 
 class MyConfig(Config):
 
-    """Let the user provide some simple information about themselves."""
+    """This will be displayed in the configuration documentation."""
 
     application = "my_application"
     general = Section(
