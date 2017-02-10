@@ -1,23 +1,34 @@
 """User config management."""
+from abc import ABCMeta, abstractmethod
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
 
-class ConfigElement(object):
+class ConfigElement(object, metaclass=ABCMeta):
 
     """
-    TODO
+    Base class for configuration elements.
 
-    TODO
+    Keyword Arguments
+    -----------------
+    doc: str, optional
+        documentation for this option, defaults to None
+    default: Any, optional
+        fallback value, defaults to None
+    required: bool, optional
+        MUST a value be present? If no default is provided, this can
+        result in a MissingData exception. Defaults to True
+    short_name: str, optional
+        short name for use with command line arguments, defaults to None
+    long_name: str, optional
+        overwrite default name for command line arguments, defaults to None
+    validate: Callable[Any, None], optional
+        additional validation function, defaults to None
 
     Raises
     ------
-    TODO
-
-    Attributes
-    ----------
-    : TODO
-        TODO
+    InvalidArgument:
+        if default value does not pass validation
 
     Examples
     --------
@@ -26,7 +37,142 @@ class ConfigElement(object):
         >>> TODO
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            doc=None,
+            default=None,
+            required=True,
+            short_name=None,
+            long_name=None,
+            validate=None):
+        self._doc = doc
+        self._default = default
+        self._required = required
+        self._short_name = short_name
+        self._long_name = long_name
+        self._validate = validate
+
+        if self._default is not None:
+            self.validate(self._default)
+
+    def has_default(self):
+        """Return True if element has a default value."""
+        return self._default is not None
+
+    @abstractmethod
+    def construct_parser(self, parser):
+        """
+        Add self to parser.
+
+        Parameters
+        ----------
+        parser: argparse.ArgumentParser
+            the argument parser to add an option to
+
+        Raises
+        ------
+        None
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        ..doctest::
+
+            >>> TODO
+        """
+        pass
+
+    @abstractmethod
+    def extract_data_from_parser(self, command_line_arguments, data):
+        """
+        Get value from parser.
+
+        Parameters
+        ----------
+        command_line_arguments: argparse.Namespace
+            parsed arguments
+        data: Dict
+            dictionary to put values in (assumes tree structure is
+            already in place)
+
+        Raises
+        ------
+        InvalidData:
+            if user provides invalid value
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        ..doctest::
+
+            >>> TODO
+        """
+        pass
+
+    @abstractmethod
+    def validate(self, value):
+        """
+        Validate individual value.
+
+        Parameters
+        ----------
+        value: Any
+            to be validated
+
+        Raises
+        ------
+        InvalidData:
+            if validation fails
+        MissingData:
+            if `self._required` is `True` and `value` is `None`
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        ..doctest::
+
+            >>> TODO
+        """
+        if self._validate is not None:
+            self._validate(value)
+
+    @abstractmethod
+    def validate_data(self, data):
+        """
+        Validate data.
+
+        Parameters
+        ----------
+        data: Dict
+            data tree in which to find and validate our own element
+
+        Raises
+        ------
+        InvalidData:
+            if validation fails
+        MissingData:
+            if `self._required` is `True` and our value in `data`
+            is `None`
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        ..doctest::
+
+            >>> TODO
+        """
         pass
 
 def config_meta(cls_name, cls_parents, cls_attributes):
@@ -151,7 +297,7 @@ class Config(metaclass=config_meta):
         self._validate(self._elements)
         # populate _data
         for element in self._elements:
-            if self._elements[element].has_default:
+            if self._elements[element].has_default():
                 self._data[element] = self._elements[element].get_default()
             else:
                 self._data[element] = None
