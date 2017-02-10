@@ -100,7 +100,11 @@ class InvalidConfigTree(Exception):
 
 class InvalidData(Exception):
 
-    """User supplied invalid data for a configuration option."""
+    """User supplied invalid data for a configuration element."""
+
+class MissingData(Exception):
+
+    """An element marked as required is missing a value."""
 
 class Config(metaclass=config_meta):
 
@@ -121,7 +125,9 @@ class Config(metaclass=config_meta):
     InvalidConfigTree:
         if configuration tree is inappropriate for file_type
     InvalidData:
-        if user supplied invalid data for a configuration option
+        if user supplied invalid data for a configuration element
+    MissingData:
+        if an element marked as required has no value
 
     Attributes
     ----------
