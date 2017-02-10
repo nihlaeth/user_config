@@ -1,5 +1,5 @@
 """Usage example for user_config."""
-from user_config import Config, Section, StringOption, IntOption
+from user_config import Config, Section, StringOption, IntegerOption
 
 class MyConfig(Config):
 
@@ -10,7 +10,7 @@ class MyConfig(Config):
         name=StringOption(
             doc="your name",
             default="unknown person"),
-        age=IntOption(
+        age=IntegerOption(
             doc="your age",
             required=True))
     address = Section(

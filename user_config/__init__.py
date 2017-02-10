@@ -1,11 +1,10 @@
 """User config management."""
-from abc import ABCMeta, abstractmethod
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
 from appdirs import AppDirs
 
-class ConfigElement(object, metaclass=ABCMeta):
+class ConfigElement(object):
 
     """
     Base class for configuration elements.
@@ -31,12 +30,20 @@ class ConfigElement(object, metaclass=ABCMeta):
     InvalidArgument:
         if default value does not pass validation
 
+    Attributes
+    ----------
+    name: str
+        name of instance, provided by containing class
+    _type: type
+        python type of variable that this class represents
+
     Examples
     --------
     ..doctest::
 
         >>> TODO
     """
+    _type = str
 
     def __init__(
             self,
@@ -49,8 +56,8 @@ class ConfigElement(object, metaclass=ABCMeta):
         self._doc = doc
         self._default = default
         self._required = required
-        self._short_name = short_name
-        self._long_name = long_name
+        self._short_name = short_name if short_name.startswith('-') else '-{}'.format(short_name)
+        self._long_name = long_name if long_name.startswith('--') else '--{}'.format(long_name)
         self._validate = validate
 
         if self._default is not None:
@@ -60,7 +67,10 @@ class ConfigElement(object, metaclass=ABCMeta):
         """Return True if element has a default value."""
         return self._default is not None
 
-    @abstractmethod
+    def get_default(self):
+        """Return default value."""
+        return self._default
+
     def construct_parser(self, parser):
         """
         Add self to parser.
@@ -84,9 +94,23 @@ class ConfigElement(object, metaclass=ABCMeta):
 
             >>> TODO
         """
-        pass
+        name = []
+        if self._short_name is not None:
+            name.append(self._short_name)
+        if self._long_name is not None:
+            name.append(self._long_name)
+        else:
+            name.append("--{}".format(self.name))
+        parser.add_option(
+            *name,
+            action='store',
+            nargs=1,
+            default=self._default,
+            type=self._type,
+            choices=None,
+            required=False,
+            help=self._doc)
 
-    @abstractmethod
     def extract_data_from_parser(self, command_line_arguments, data):
         """
         Get value from parser.
@@ -101,8 +125,7 @@ class ConfigElement(object, metaclass=ABCMeta):
 
         Raises
         ------
-        InvalidData:
-            if user provides invalid value
+        None
 
         Returns
         -------
@@ -114,9 +137,11 @@ class ConfigElement(object, metaclass=ABCMeta):
 
             >>> TODO
         """
-        pass
+        name = self.name if self._long_name is None else self._long_name[2:]
+        if command_line_arguments[name] is None:
+            return
+        data[self.name] = command_line_arguments[name]
 
-    @abstractmethod
     def validate(self, value):
         """
         Validate individual value.
@@ -130,8 +155,6 @@ class ConfigElement(object, metaclass=ABCMeta):
         ------
         InvalidData:
             if validation fails
-        MissingData:
-            if `self._required` is `True` and `value` is `None`
 
         Returns
         -------
@@ -143,10 +166,14 @@ class ConfigElement(object, metaclass=ABCMeta):
 
             >>> TODO
         """
+        if value is None:
+            return
+        if not isinstance(value, self._type):
+            raise InvalidData('expected a {}, not {}'.format(
+                self._type, value))
         if self._validate is not None:
             self._validate(value)
 
-    @abstractmethod
     def validate_data(self, data):
         """
         Validate data.
@@ -174,7 +201,143 @@ class ConfigElement(object, metaclass=ABCMeta):
 
             >>> TODO
         """
+        if self._required and data[self.name] is None:
+            # none of the configuration options provided a required
+            # value, raise an error now
+            raise MissingData(
+                'no value was provided for required option {}'.format(
+                    self.name))
+        if data[self.name] is not None:
+            self.validate(data[self.name])
+
+class Section(ConfigElement):
+
+    """
+    Named container that contains ConfigElements.
+
+    Keyword Arguments
+    -----------------
+    doc: str, optional
+        documentation for this option, defaults to None
+    default: Any, optional
+        IGNORED
+    required: bool, optional
+        MUST section be present? If no default is provided for any
+        required content elements, this can result in a
+        MissingData exception. Defaults to True
+    short_name: str, optional
+        IGNORED
+    long_name: str, optional
+        IGNORED
+    validate: Callable[Any, None], optional
+        additional validation function, defaults to None
+    **content: ConfigElement, optional
+        content of section
+
+    Raises
+    ------
+    AttributeError:
+        if content element is not a ConfigElement
+
+    Attributes
+    ----------
+    incomplete_count: int
+        Number of content elements which are required, but do not have a
+        value. Useful for sections which are not marked as required, but
+        do have required elements.
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
+    """
+
+    incomplete_count = 0
+
+    def __init__(
+            self,
+            doc=None,
+            default=None,
+            required=True,
+            short_name=None,
+            long_name=None,
+            validate=None,
+            **content):
+        ConfigElement.__init__(
+            self,
+            doc=doc,
+            required=required,
+            short_name=short_name,
+            long_name=long_name,
+            validate=validate)
+        self._elements = {}
+        for element in content:
+            if not isinstance(content[element], ConfigElement):
+                raise AttributeError(
+                    '{} is not a ConfigElement'.format(element))
+            content[element].name = element
+            self._elements[element] = content[element]
+
+    def has_default(self):
+        """Return True because Section always has a default value."""
+        return True
+
+    def get_default(self):
+        """Return default Section."""
+        result = {}
+        for element in self._elements:
+            if self._elements[element].has_default():
+                result[element] = self._elements[element].get_default()
+            else:
+                result[element] = None
+        return result
+
+    def construct_parser(self, parser):
+        for element in self._elements:
+            self._elements[element].construct_parser(parser)
+
+    def extract_data_from_parser(self, command_line_arguments, data):
+        for element in self._elements:
+            self._elements[element].extract_data_from_parser(
+                command_line_arguments, data[self.name])
+
+    def validate(self, value):
         pass
+
+    def validate_data(self, data):
+        for element in self._elements:
+            try:
+                self._elements[element].validate_data(data[self.name])
+            except MissingData:
+                if not self._required:
+                    self.incomplete_count += 1
+                else:
+                    raise
+
+class StringOption(ConfigElement):
+
+    """Configuration element with string value."""
+
+    _type = str
+
+class IntegerOption(ConfigElement):
+
+    """Configuration element with integer value."""
+
+    _type = int
+
+class FloatOption(ConfigElement):
+
+    """Configuration element with float value."""
+
+    _type = float
+
+class BooleanOption(ConfigElement):
+
+    """Configuration element with boolean value."""
+
+    _type = bool
 
 def config_meta(cls_name, cls_parents, cls_attributes):
     """
