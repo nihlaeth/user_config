@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
+from appdirs import AppDirs
 
 class ConfigElement(object, metaclass=ABCMeta):
 
@@ -258,14 +259,12 @@ class Config(metaclass=config_meta):
     """
     Base class for application configuration.
 
-    TODO
-
     Raises
     ------
     AttributeError:
-        if application is not set
+        if `application` or `author` is not set
     InvalidConfigTree:
-        if configuration tree is inappropriate for file_type
+        if configuration tree is inappropriate for `file_type`
     InvalidData:
         if user supplied invalid data for a configuration element
     MissingData:
@@ -277,6 +276,11 @@ class Config(metaclass=config_meta):
         file type to use for configuration files
     application: str
         application name
+    author: str
+        application author
+    version: str
+        application version (set if your configuration is version
+        dependent)
 
     Examples
     --------
@@ -287,11 +291,16 @@ class Config(metaclass=config_meta):
 
     file_type = "ini"
     application = None
+    author = None
+    version = None
 
     def __init__(self):
         if self.application is None:
             raise AttributeError(
                 'application not set, please provide an application name')
+        if self.author is None:
+            raise AttributeError(
+                'author not set, please provide an application author')
         self._data = {}
         # validate _elements
         self._validate(self._elements)
@@ -302,21 +311,14 @@ class Config(metaclass=config_meta):
             else:
                 self._data[element] = None
         # read global config
-        global_path = Path('/etc').joinpath("{}{}".format(
-            self.application, self._extension))
-        if not global_path.is_file():
-            alternate_global_path = global_path
-            global_path = Path('/etc').joinpath(self.application).joinpath(
-                "config{}".format(self._extension))
+        paths = AppDirs(self.application, self.author, self.version)
+        global_path = Path(paths.site_config_dir).joinpath(
+            "config.{}".format(self._extension))
         if global_path.is_file():
             self._read(global_path, self._elements, self._data)
         # read user config
-        user_path = Path().home().joinpath(".{}{}".format(
-            self.application, self._extension))
-        if not user_path.is_file():
-            alternate_user_path = user_path
-            user_path = Path().home().joinpath(".config").joinpath(
-                self.application).joinpath("config{}".format(self._extension))
+        user_path = Path(paths.user_data_dir).joinpath(
+            "config.{}".format(self._extension))
         if user_path.is_file():
             self._read(user_path, self._elements, self._data)
         # construct a commandline parser
@@ -325,8 +327,8 @@ class Config(metaclass=config_meta):
             description="{}\n\n{}\n{}\n{}".format(
                 self.__doc__,
                 "Command line arguments overwrite configuration found in:",
-                user_path if alternate_user_path is None else alternate_user_path,
-                global_path if alternate_global_path is None else alternate_global_path))
+                user_path,
+                global_path))
         for element in self._elements:
             self._elements[element].construct_parser(parser)
         # put command line argument data into _data

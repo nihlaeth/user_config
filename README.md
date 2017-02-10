@@ -3,17 +3,22 @@ manage user configuration for python projects
 
 ## Fallback order
 1. command line arguments
-2. user config files in `~/.<app>(rc|.<extension>)` or `~/.config/<app>/config[.<extension>]`
-3. global config files in `/etc/<app>[.<extension>]` or `/etc/<app>/config[.<extension>]`
+2. user config files in `~/.config/<app>/config.<extension>`
+3. global config files in `/etc/xdg/<app>/config.<extension>`
 4. default values
+
+For directories on operating systems than linux, see: https://github.com/ActiveState/appdirs
 
 ## Config format
 Supported out of the box: ini
 
 Other config formats can be supported via plug-ins.
 
+## Requirements
+* Linux, or Os X, or Windows (but not Windows Vista)
+
 ## Planned features
 * support for python version 2
-* Windows support
 * support for multi file configuration
 * command line option to generate fully commented config file with default values
+* yaml config format
