@@ -19,8 +19,113 @@ Other config formats can be supported via plug-ins.
 * python 2.7 or new (python 3.6 supported)
 * relatively new versions of setuptools and pip (version requirement to follow)
 
+## Example
+```python
+"""Usage example for user_config."""
+from user_config import Config, Section, StringOption, IntegerOption
+
+class MyConfig(Config):
+
+    """This will be displayed in the configuration documentation."""
+
+    application = "my_application"
+    author = "me"
+    general = Section(
+        name=StringOption(
+            doc="your name",
+            default="unknown person"),
+        age=IntegerOption(
+            doc="your age",
+            required=True))
+    address = Section(
+        street=StringOption(
+            doc="street including house number",
+            required=True),
+        city=StringOption(required=True),
+        required=False,
+        doc="shipping address")
+
+if __name__ == "__main__":
+    CONFIG = MyConfig()
+    print("hello there, {}!".format(CONFIG.general.name))
+```
+
+```
+$ python examples/simple_example.py -h
+usage: my_application [-h] [--generate-config] [--city CITY] [--street STREET]
+                      [--age AGE] [--name NAME]
+
+This will be displayed in the configuration documentation. Command line
+arguments overwrite configuration found in:
+/root/.config/my_application/config.cfg /etc/xdg/my_application/config.cfg
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --generate-config  print a complete configuration file with current settings
+  --city CITY
+  --street STREET    street including house number
+  --age AGE          your age
+  --name NAME        your name
+```
+
+```
+$ python examples/simple_example.py --age 211
+hello there, unknown person!
+```
+
+```
+$ python examples/simple_example.py
+Traceback (most recent call last):
+  File "examples/simple_example.py", line 26, in <module>
+    CONFIG = MyConfig()
+  File "/git/user_config/user_config/user_config/__init__.py", line 541, in __init__
+    self._elements[element].validate_data(self._data)
+  File "/git/user_config/user_config/user_config/__init__.py", line 322, in validate_data
+    self._elements[element].validate_data(self._data)
+  File "/git/user_config/user_config/user_config/__init__.py", line 216, in validate_data
+    self.element_name))
+user_config.MissingData: no value was provided for required option age
+```
+
+```
+$ python examples/simple_example.py --age 211 --name
+hello there, mystery_user!
+```
+
+```
+$ python examples/simple_example.py --generate-config
+## This will be displayed in the configuration documentation.
+
+[address]
+## shipping address
+## OPTIONAL_SECTION
+
+## REQUIRED
+# city = 
+city = 
+
+## street including house number
+## REQUIRED
+# street = 
+street = 
+
+
+[general]
+## your age
+## REQUIRED
+# age = 
+age = 
+
+## your name
+# name = unknown person
+
+```
+
+
 ## Planned features
+* use ordered dicts for option storage
 * support for multi file configuration
-* command line option to generate fully commented config file with default values
+* multi matching sections / wildcard sections
 * yaml config format
 * json config format
+* hook for overwriting config from database or other storage function

@@ -1,4 +1,5 @@
 """User config management."""
+import sys
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
@@ -53,9 +54,9 @@ class ConfigElement(object):
             short_name=None,
             long_name=None,
             validate=None):
-        self._doc = doc
+        self.doc = doc
         self._default = default
-        self._required = required
+        self.required = required
         if short_name is None or short_name.startswith('-'):
             self._short_name = short_name
         else:
@@ -115,7 +116,7 @@ class ConfigElement(object):
             type=self.type_,
             choices=None,
             required=False,
-            help=self._doc)
+            help=self.doc)
 
     def extract_data_from_parser(self, command_line_arguments, data):
         """
@@ -194,7 +195,7 @@ class ConfigElement(object):
         InvalidData:
             if validation fails
         MissingData:
-            if `self._required` is `True` and our value in `data`
+            if `self.required` is `True` and our value in `data`
             is `None`
 
         Returns
@@ -207,7 +208,7 @@ class ConfigElement(object):
 
             >>> TODO
         """
-        if self._required and data[self.element_name] is None:
+        if self.required and data[self.element_name] is None:
             # none of the configuration options provided a required
             # value, raise an error now
             raise MissingData(
@@ -320,7 +321,7 @@ class Section(ConfigElement):
             try:
                 self._elements[element].validate_data(self._data)
             except MissingData:
-                if not self._required:
+                if not self.required:
                     self.incomplete_count += 1
                 else:
                     raise
@@ -516,10 +517,23 @@ class Config(with_metaclass(ConfigMeta, object)):
                 "Command line arguments overwrite configuration found in:",
                 user_path,
                 global_path))
+        parser.add_argument(
+            '--generate-config',
+            action='store_const',
+            const=True,
+            default=False,
+            required=False,
+            help="print a complete configuration file with current settings")
         for element in self._elements:
             self._elements[element].construct_parser(parser)
-        # put command line argument data into _data
         command_line_arguments = vars(parser.parse_args())
+
+        # check if we should print a configuration file
+        if command_line_arguments['generate_config']:
+            self._write(self._elements, self._data, self.__doc__)
+            sys.exit(True)
+
+        # put command line argument data into _data
         for element in self._elements:
             self._elements[element].extract_data_from_parser(
                 command_line_arguments, self._data)

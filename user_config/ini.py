@@ -81,9 +81,63 @@ def ini_read(_, path, elements, data):
             except configparser.NoSectionError:
                 pass
 
-def ini_write(_):
+def _print_item(key, item, value):
+    """Print single key value pair."""
+    # print docstring
+    if item.doc is not None:
+        doc_string = item.doc.split('\n')
+        for line in doc_string:
+            print("## {}".format(line))
+
+    # print default
+    if item.has_default():
+        # handle multiline strings
+        lines = item.get_default().split('\n')
+        print("# {} = {}".format(key, lines[0]))
+        if len(lines) > 1:
+            for line in lines[1:]:
+                print("#     {}".format(line))
+    else:
+        if item.required:
+            print("## REQUIRED")
+        print("# {} = ".format(key))
+
+    # print current value
+    if value is None and item.required:
+        print("{} = ".format(key))
+    elif value is not None and value != item.get_default():
+        # handle multiline strings
+        lines = value.split('\n')
+        print("{} = {}".format(key, lines[0]))
+        if len(lines) > 1:
+            for line in lines[1:]:
+                print("    {}".format(line))
+    print("")
+
+def ini_write(_, elements, data, doc):
     """Write default ini file."""
-    pass
+    # print docstring
+    if doc is not None:
+        doc_string = doc.split('\n')
+        for line in doc_string:
+            print("## {}".format(line))
+        print("")
+    for section in elements:
+        print("[{}]".format(section))
+        # print docstring and optional status
+        if elements[section].doc is not None:
+            doc_string = elements[section].doc.split('\n')
+            for line in doc_string:
+                print("## {}".format(line))
+        if not elements[section].required:
+            print("## OPTIONAL_SECTION")
+        if elements[section].doc is not None or not elements[section].required:
+            print("")
+
+        keys, values = elements[section].get_elements()
+        for key in keys:
+            _print_item(key, keys[key], values[key])
+        print("")
 
 def register_extension():
     """
