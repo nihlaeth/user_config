@@ -11,6 +11,8 @@ def ini_validate(_, elements):
 
     Parameters
     ----------
+    _: user_config.Config
+        IGNORED
     elements: Dict[ConfigElement]
         element tree
 
@@ -45,6 +47,8 @@ def ini_read(_, path, elements, data):
 
     Parameters
     ----------
+    _: user_config.Config
+        IGNORED
     path: pathlib.Path
         path to configuration file
     elements: Dict[ConfigElement]
@@ -54,11 +58,11 @@ def ini_read(_, path, elements, data):
 
     Raises
     ------
-    TODO
+    None
 
     Returns
     -------
-    TODO
+    None
 
     Examples
     --------
@@ -115,13 +119,43 @@ def _print_item(key, item, value):
     print("")
 
 def ini_write(_, elements, data, doc):
-    """Write default ini file."""
-    # print docstring
+    """
+    Print default ini file.
+
+    This includes data already set in the existing configuration files.
+
+    Parameters
+    ----------
+    _: user_config.Config
+        IGNORED
+    elements: Dict[ConfigElement]
+        configuration element tree
+    data: Dict
+        data tree
+    doc: Option[str]
+        `Config` class docstring
+
+    Raises
+    ------
+    None
+
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
+    """
+    # print config class docstring
     if doc is not None:
         doc_string = doc.split('\n')
         for line in doc_string:
             print("## {}".format(line))
         print("")
+
     for section in elements:
         print("[{}]".format(section))
         # print docstring and optional status
@@ -141,7 +175,7 @@ def ini_write(_, elements, data, doc):
 
 def register_extension():
     """
-    Register ini file format functions with user_config.
+    Register ini file format functions with `user_config`.
 
     Returns
     -------
@@ -151,7 +185,8 @@ def register_extension():
     --------
     ..doctest::
 
-        >>> TODO
+        >>> register_extension()
+        {'read': <function ini_read at 0x...>, 'write': <function ini_write at 0x...>, 'validate': <function ini_validate at 0x...>, 'extension': 'cfg'}
     """
     return {
         'extension': 'cfg',

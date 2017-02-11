@@ -189,7 +189,7 @@ class ConfigElement(object):
         Parameters
         ----------
         data: Dict
-            data tree in which to find and validate our own element
+            data structure in which to find and validate our own element
 
         Raises
         ------
@@ -210,7 +210,7 @@ class ConfigElement(object):
             >>> TODO
         """
         if self.required and data[self.element_name] is None:
-            # none of the configuration options provided a required
+            # none of the configuration locations provided a required
             # value, raise an error now
             raise MissingData(
                 'no value was provided for required option {}'.format(
@@ -232,7 +232,8 @@ class Section(ConfigElement):
     required: bool, optional
         MUST section be present? If no default is provided for any
         required content elements, this can result in a
-        MissingData exception. Defaults to True
+        MissingData exception. to find out if an optional section
+        is complete, see `self.incomplete_count`. Defaults to True
     short_name: str, optional
         IGNORED
     long_name: str, optional
@@ -245,7 +246,7 @@ class Section(ConfigElement):
     Raises
     ------
     AttributeError:
-        if content element is not a ConfigElement
+        if content element is not a `ConfigElement`
 
     Attributes
     ----------
@@ -293,7 +294,7 @@ class Section(ConfigElement):
         return True
 
     def get_default(self):
-        """Fetch defaults Section elements."""
+        """Fetch and store default Section elements."""
         for element in self._elements:
             if self._elements[element].has_default():
                 self._data[element] = self._elements[element].get_default()
@@ -355,25 +356,51 @@ class BooleanOption(ConfigElement):
     type_ = bool
 
 def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass.
+    """
+    Create a base class with a metaclass.
+
     Drops the middle class upon creation.
     Source: http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
+
+    Parameters
+    ----------
+    meta: type
+        meta class or function
+    *bases: object
+        parents of class to be created
+
+    Raises
+    ------
+    None
+
+    Returns
+    -------
+    class of type `name`
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
     """
-    class metaclass(meta):
+    class MetaClass(meta):
+        """Man-in-the-middle class."""
         __call__ = type.__call__
         __init__ = type.__init__
-        def __new__(cls, name, this_bases, d):
+
+        def __new__(cls, name, this_bases, dictionary):
             if this_bases is None:
-                return type.__new__(cls, name, (), d)
-            return meta(name, bases, d)
-    return metaclass('temporary_class', None, {})
+                return type.__new__(cls, name, (), dictionary)
+            return meta(name, bases, dictionary)
+    return MetaClass('temporary_class', None, {})
 
 class ConfigMeta(type):
-    """
-    ORM-like magic for configuration classes.
 
-    Gather all ConfigElement attributes into _elements and
-    get correct reader and writer functions.
+    """
+    ORM-like magic for configuration class.
+
+    Gather all `ConfigElement` attributes into `_elements` and
+    get correct `_validate`, `_read` and `_writer` functions.
 
     Parameters
     ----------
@@ -389,7 +416,7 @@ class ConfigMeta(type):
     AttributeError:
         if class tries to overwrite a reserved attribute
     ImportError:
-        if no appropriate entry_point could be found for file_type
+        if no appropriate `entry_point` could be found for `file_type`
 
     Examples
     --------
@@ -467,7 +494,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         application name
     author: str
         application author
-    version: str
+    version: str, optional
         application version (set if your configuration is version
         dependent)
 
