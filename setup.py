@@ -7,10 +7,10 @@ setup(
     description='manage user configuration for Python packages',
     author='nihlaeth',
     author_email='info@nihlaeth.nl',
-    python_requires='>=3.5',
+    python_requires='>=2.7',
     packages=find_packages(),
-    install_requires=['appdirs>=1.4'],
+    install_requires=['appdirs>=1.4', 'pathlib;python_version<"3.3"'],
     entry_points={
-        'user_config.file_types': [
+        'user_config.file_type': [
             'ini = user_config.ini:register_extension']},
     )

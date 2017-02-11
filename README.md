@@ -16,9 +16,11 @@ Other config formats can be supported via plug-ins.
 
 ## Requirements
 * Linux, or Os X, or Windows (but not Windows Vista)
+* python 2.7 or new (python 3.6 supported)
+* relatively new versions of setuptools and pip (version requirement to follow)
 
 ## Planned features
-* support for python version 2
 * support for multi file configuration
 * command line option to generate fully commented config file with default values
 * yaml config format
+* json config format

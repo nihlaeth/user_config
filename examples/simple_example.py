@@ -6,6 +6,7 @@ class MyConfig(Config):
     """This will be displayed in the configuration documentation."""
 
     application = "my_application"
+    author = "me"
     general = Section(
         name=StringOption(
             doc="your name",

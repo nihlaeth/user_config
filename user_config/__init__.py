@@ -32,9 +32,9 @@ class ConfigElement(object):
 
     Attributes
     ----------
-    name: str
+    element_name: str
         name of instance, provided by containing class
-    _type: type
+    type_: type
         python type of variable that this class represents
 
     Examples
@@ -43,7 +43,7 @@ class ConfigElement(object):
 
         >>> TODO
     """
-    _type = str
+    type_ = str
 
     def __init__(
             self,
@@ -56,8 +56,14 @@ class ConfigElement(object):
         self._doc = doc
         self._default = default
         self._required = required
-        self._short_name = short_name if short_name.startswith('-') else '-{}'.format(short_name)
-        self._long_name = long_name if long_name.startswith('--') else '--{}'.format(long_name)
+        if short_name is None or short_name.startswith('-'):
+            self._short_name = short_name
+        else:
+            self._short_name = '-{}'.format(short_name)
+        if long_name is None or long_name.startswith('--'):
+            self._long_name = long_name
+        else:
+            self._long_name = '--{}'.format(long_name)
         self._validate = validate
 
         if self._default is not None:
@@ -100,13 +106,13 @@ class ConfigElement(object):
         if self._long_name is not None:
             name.append(self._long_name)
         else:
-            name.append("--{}".format(self.name))
-        parser.add_option(
+            name.append("--{}".format(self.element_name))
+        parser.add_argument(
             *name,
             action='store',
-            nargs=1,
-            default=self._default,
-            type=self._type,
+            #nargs=1,
+            default=None,
+            type=self.type_,
             choices=None,
             required=False,
             help=self._doc)
@@ -137,10 +143,10 @@ class ConfigElement(object):
 
             >>> TODO
         """
-        name = self.name if self._long_name is None else self._long_name[2:]
+        name = self.element_name if self._long_name is None else self._long_name[2:]
         if command_line_arguments[name] is None:
             return
-        data[self.name] = command_line_arguments[name]
+        data[self.element_name] = command_line_arguments[name]
 
     def validate(self, value):
         """
@@ -168,9 +174,9 @@ class ConfigElement(object):
         """
         if value is None:
             return
-        if not isinstance(value, self._type):
+        if not isinstance(value, self.type_):
             raise InvalidData('expected a {}, not {}'.format(
-                self._type, value))
+                self.type_, value))
         if self._validate is not None:
             self._validate(value)
 
@@ -201,14 +207,14 @@ class ConfigElement(object):
 
             >>> TODO
         """
-        if self._required and data[self.name] is None:
+        if self._required and data[self.element_name] is None:
             # none of the configuration options provided a required
             # value, raise an error now
             raise MissingData(
                 'no value was provided for required option {}'.format(
-                    self.name))
-        if data[self.name] is not None:
-            self.validate(data[self.name])
+                    self.element_name))
+        if data[self.element_name] is not None:
+            self.validate(data[self.element_name])
 
 class Section(ConfigElement):
 
@@ -272,11 +278,12 @@ class Section(ConfigElement):
             long_name=long_name,
             validate=validate)
         self._elements = {}
+        self._data = {}
         for element in content:
             if not isinstance(content[element], ConfigElement):
                 raise AttributeError(
                     '{} is not a ConfigElement'.format(element))
-            content[element].name = element
+            content[element].element_name = element
             self._elements[element] = content[element]
 
     def has_default(self):
@@ -284,62 +291,82 @@ class Section(ConfigElement):
         return True
 
     def get_default(self):
-        """Return default Section."""
-        result = {}
+        """Fetch defaults Section elements."""
         for element in self._elements:
             if self._elements[element].has_default():
-                result[element] = self._elements[element].get_default()
+                self._data[element] = self._elements[element].get_default()
             else:
-                result[element] = None
-        return result
+                self._data[element] = None
+        return self
+
+    def get_elements(self):
+        """Return elements and data."""
+        return self._elements, self._data
 
     def construct_parser(self, parser):
         for element in self._elements:
             self._elements[element].construct_parser(parser)
 
-    def extract_data_from_parser(self, command_line_arguments, data):
+    def extract_data_from_parser(self, command_line_arguments, _):
         for element in self._elements:
             self._elements[element].extract_data_from_parser(
-                command_line_arguments, data[self.name])
+                command_line_arguments, self._data)
 
     def validate(self, value):
         pass
 
-    def validate_data(self, data):
+    def validate_data(self, _):
         for element in self._elements:
             try:
-                self._elements[element].validate_data(data[self.name])
+                self._elements[element].validate_data(self._data)
             except MissingData:
                 if not self._required:
                     self.incomplete_count += 1
                 else:
                     raise
 
+    def __getattr__(self, name):
+        return self._data[name]
+
 class StringOption(ConfigElement):
 
     """Configuration element with string value."""
 
-    _type = str
+    type_ = str
 
 class IntegerOption(ConfigElement):
 
     """Configuration element with integer value."""
 
-    _type = int
+    type_ = int
 
 class FloatOption(ConfigElement):
 
     """Configuration element with float value."""
 
-    _type = float
+    type_ = float
 
 class BooleanOption(ConfigElement):
 
     """Configuration element with boolean value."""
 
-    _type = bool
+    type_ = bool
 
-def config_meta(cls_name, cls_parents, cls_attributes):
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass.
+    Drops the middle class upon creation.
+    Source: http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
+    """
+    class metaclass(meta):
+        __call__ = type.__call__
+        __init__ = type.__init__
+        def __new__(cls, name, this_bases, d):
+            if this_bases is None:
+                return type.__new__(cls, name, (), d)
+            return meta(name, bases, d)
+    return metaclass('temporary_class', None, {})
+
+class ConfigMeta(type):
     """
     ORM-like magic for configuration classes.
 
@@ -362,48 +389,45 @@ def config_meta(cls_name, cls_parents, cls_attributes):
     ImportError:
         if no appropriate entry_point could be found for file_type
 
-    Returns
-    -------
-    class
-
     Examples
     --------
     ..doctest::
 
         >>> TODO
     """
-    reserved_names = [
-        '_elements',
-        '_extension',
-        '_read',
-        '_write',
-        '_validate']
-    new_attributes = {'_elements': {}}
-    for attribute in cls_attributes:
-        if isinstance(cls_attributes[attribute], ConfigElement):
-            new_attributes['_elements'][attribute] = cls_attributes[attribute]
-            new_attributes['_elements'][attribute].name = attribute
-        elif attribute == 'file_type':
-            file_types = {}
-            for entry_point in iter_entry_points('user_config.file_type'):
-                # TODO: deal with duplicate entry point names
-                file_types[entry_point.name] = entry_point
-            if cls_attributes[attribute] not in file_types:
-                raise ImportError(
-                    'no entry point found for file type {}'.format(
-                        cls_attributes[attribute]))
-            extension = file_types[cls_attributes[attribute]].load()()
-            new_attributes['_extension'] = extension['extension']
-            new_attributes['_read'] = extension['read']
-            new_attributes['_write'] = extension['write']
-            new_attributes['_validate'] = extension['validate']
-        elif attribute in reserved_names:
-            raise AttributeError(
-                '{} is a reserved attribute for Config classes'.format(
-                    attribute))
-        else:
-            new_attributes[attribute] = cls_attributes[attribute]
-    return type(cls_name, cls_parents, new_attributes)
+    def __new__(mcs, cls_name, cls_parents, cls_attributes):
+        reserved_names = [
+            '_elements',
+            '_extension',
+            '_read',
+            '_write',
+            '_validate']
+        new_attributes = {'_elements': {}}
+        for attribute in cls_attributes:
+            if attribute in reserved_names:
+                raise AttributeError(
+                    '{} is a reserved attribute for Config classes'.format(
+                        attribute))
+            elif isinstance(cls_attributes[attribute], ConfigElement):
+                new_attributes['_elements'][attribute] = cls_attributes[attribute]
+                new_attributes['_elements'][attribute].element_name = attribute
+            elif attribute == 'file_type':
+                file_types = {}
+                for entry_point in iter_entry_points('user_config.file_type'):
+                    # TODO: deal with duplicate entry point names
+                    file_types[entry_point.name] = entry_point
+                if cls_attributes[attribute] not in file_types:
+                    raise ImportError(
+                        'no entry point found for file type {}'.format(
+                            cls_attributes[attribute]))
+                extension = file_types[cls_attributes[attribute]].load()()
+                new_attributes['_extension'] = extension['extension']
+                new_attributes['_read'] = extension['read']
+                new_attributes['_write'] = extension['write']
+                new_attributes['_validate'] = extension['validate']
+            else:
+                new_attributes[attribute] = cls_attributes[attribute]
+        return type.__new__(mcs, cls_name, cls_parents, new_attributes)
 
 class InvalidConfigTree(Exception):
 
@@ -417,7 +441,7 @@ class MissingData(Exception):
 
     """An element marked as required is missing a value."""
 
-class Config(metaclass=config_meta):
+class Config(with_metaclass(ConfigMeta, object)):
 
     """
     Base class for application configuration.
@@ -480,13 +504,13 @@ class Config(metaclass=config_meta):
         if global_path.is_file():
             self._read(global_path, self._elements, self._data)
         # read user config
-        user_path = Path(paths.user_data_dir).joinpath(
+        user_path = Path(paths.user_config_dir).joinpath(
             "config.{}".format(self._extension))
         if user_path.is_file():
             self._read(user_path, self._elements, self._data)
         # construct a commandline parser
         parser = argparse.ArgumentParser(
-            prog=self._application,
+            prog=self.application,
             description="{}\n\n{}\n{}\n{}".format(
                 self.__doc__,
                 "Command line arguments overwrite configuration found in:",
@@ -495,9 +519,12 @@ class Config(metaclass=config_meta):
         for element in self._elements:
             self._elements[element].construct_parser(parser)
         # put command line argument data into _data
-        command_line_arguments = parser.parse_args()
+        command_line_arguments = vars(parser.parse_args())
         for element in self._elements:
             self._elements[element].extract_data_from_parser(
                 command_line_arguments, self._data)
             # validate _data
             self._elements[element].validate_data(self._data)
+
+    def __getattr__(self, name):
+        return self._data[name]
