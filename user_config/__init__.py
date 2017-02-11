@@ -6,6 +6,65 @@ import argparse
 from pkg_resources import iter_entry_points
 from appdirs import AppDirs
 
+class MappingMixin(object):
+
+    """Methods for emulating a mapping type."""
+
+    def __getattr__(self, key):
+        return self._data[key]
+
+    def __setattr__(self, key, value):
+        if key in self.__dict__:
+            self.__dict__[key] = value
+        elif self._elements is None or key not in self._elements:
+            self.__dict__[key] = value
+        else:
+            self._elements[key].validate(value)
+            self._data[key] = value
+
+    def __len__(self):
+        return len(self._elements)
+
+    def __getitem__(self, key):
+        return self._dict['key']
+
+    def __setitem__(self, key, value):
+        if key not in self._elements:
+            raise AttributeError(
+                'no field with name {}'.format(key))
+        self._elements[key].validate(value)
+        self._data[key] = value
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __reversed__(self):
+        return reversed(self._data)
+
+    def __contains__(self, item):
+        return item in self._elements
+
+    def keys(self):
+        """Return a view of dictionary keys."""
+        return self._data.keys()
+
+    def values(self):
+        """Return a view of dictionary values."""
+        return self._data.values()
+
+    def items(self):
+        """Return a view of dictionary key, value pairs."""
+        return self._data.items()
+
+    def get(self, key, default):
+        """Get items without risking a KeyError."""
+        return self._data.get(key, default)
+
+    def update(self, *args, **kwargs):
+        """Update more than one key at a time."""
+        # TODO: validate
+        self._data.update(*args, **kwargs)
+
 class ConfigElement(object):
 
     """
@@ -45,6 +104,7 @@ class ConfigElement(object):
 
         >>> TODO
     """
+    element_name = None
     type_ = str
 
     def __init__(
@@ -218,7 +278,7 @@ class ConfigElement(object):
         if data[self.element_name] is not None:
             self.validate(data[self.element_name])
 
-class Section(ConfigElement):
+class Section(ConfigElement, MappingMixin):
 
     """
     Named container that contains ConfigElements.
@@ -263,6 +323,8 @@ class Section(ConfigElement):
     """
 
     incomplete_count = 0
+    _elements = None
+    _data = None
 
     def __init__(
             self,
@@ -273,6 +335,8 @@ class Section(ConfigElement):
             long_name=None,
             validate=None,
             **content):
+        self._elements = collections.OrderedDict()
+        self._data = collections.OrderedDict()
         ConfigElement.__init__(
             self,
             doc=doc,
@@ -280,8 +344,6 @@ class Section(ConfigElement):
             short_name=short_name,
             long_name=long_name,
             validate=validate)
-        self._elements = collections.OrderedDict()
-        self._data = collections.OrderedDict()
         for element in content:
             if not isinstance(content[element], ConfigElement):
                 raise AttributeError(
@@ -327,9 +389,6 @@ class Section(ConfigElement):
                     self.incomplete_count += 1
                 else:
                     raise
-
-    def __getattr__(self, name):
-        return self._data[name]
 
 class StringOption(ConfigElement):
 
@@ -470,7 +529,7 @@ class MissingData(Exception):
 
     """An element marked as required is missing a value."""
 
-class Config(with_metaclass(ConfigMeta, object)):
+class Config(with_metaclass(ConfigMeta, MappingMixin)):
 
     """
     Base class for application configuration.
@@ -509,6 +568,7 @@ class Config(with_metaclass(ConfigMeta, object)):
     application = None
     author = None
     version = None
+    _data = None
 
     def __init__(self):
         if self.application is None:
