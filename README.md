@@ -88,7 +88,7 @@ user_config.MissingData: no value was provided for required option age
 ```
 
 ```
-$ python examples/simple_example.py --age 211 --name
+$ python examples/simple_example.py --age 211 --name mystery_user
 hello there, mystery_user!
 ```
 
