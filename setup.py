@@ -25,19 +25,12 @@ class Doctest(Command):
                      self.target) # finally, specify the doctest builder'
         sph.build()
 
-class BuildHtml(Doctest):
-
-    """Build sphinx html documentation."""
-
-    target = 'html'
-    output_dir = './doc/build/html'
-
 with open('README.rst', 'r') as readme:
     LONG_DESCRIPTION = readme.read()
 
 setup(
     name='user_config',
-    version='1.0a3',
+    version='1.0a4',
     description='manage user configuration for python packages',
     long_description=LONG_DESCRIPTION,
     author='nihlaeth',
@@ -49,11 +42,9 @@ setup(
     install_requires=['appdirs>=1.4', 'pathlib;python_version<"3.3"'],
     extras_require={
         'doctest': ['sphinx>=1.3.1'],
-        'doc': ['sphinx>=1.3.1'],
+        'doc': ['sphinx>=1.3.1', 'sphinx-pypi-upload', 'collective.checkdocs'],
     },
-    cmdclass={
-        'doctest': Doctest,
-        'html': BuildHtml},
+    cmdclass={'doctest': Doctest},
     entry_points={
         'user_config.file_type': [
             'ini = user_config.ini:register_extension']},
