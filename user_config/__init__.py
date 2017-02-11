@@ -1,5 +1,6 @@
 """User config management."""
 import sys
+import collections
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
@@ -278,8 +279,8 @@ class Section(ConfigElement):
             short_name=short_name,
             long_name=long_name,
             validate=validate)
-        self._elements = {}
-        self._data = {}
+        self._elements = collections.OrderedDict()
+        self._data = collections.OrderedDict()
         for element in content:
             if not isinstance(content[element], ConfigElement):
                 raise AttributeError(
@@ -403,7 +404,7 @@ class ConfigMeta(type):
             '_read',
             '_write',
             '_validate']
-        new_attributes = {'_elements': {}}
+        new_attributes = {'_elements': collections.OrderedDict()}
         for attribute in cls_attributes:
             if attribute in reserved_names:
                 raise AttributeError(
@@ -489,7 +490,7 @@ class Config(with_metaclass(ConfigMeta, object)):
         if self.author is None:
             raise AttributeError(
                 'author not set, please provide an application author')
-        self._data = {}
+        self._data = collections.OrderedDict()
         # validate _elements
         self._validate(self._elements)
         # populate _data

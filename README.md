@@ -123,7 +123,6 @@ age =
 
 
 ## Planned features
-* use ordered dicts for option storage
 * support for multi file configuration
 * multi matching sections / wildcard sections
 * yaml config format
