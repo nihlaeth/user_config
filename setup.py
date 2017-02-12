@@ -43,7 +43,11 @@ setup(
     install_requires=['appdirs>=1.4', 'pathlib;python_version<"3.3"'],
     extras_require={
         'doctest': ['sphinx>=1.3.1'],
-        'doc': ['sphinx>=1.3.1', 'sphinx-pypi-upload', 'collective.checkdocs'],
+        'doc': [
+            'sphinx>=1.3.1',
+            'sphinx_rtd_theme',
+            'sphinx-pypi-upload',
+            'collective.checkdocs'],
     },
     cmdclass={'doctest': Doctest},
     entry_points={
