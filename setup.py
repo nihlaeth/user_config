@@ -39,10 +39,11 @@ setup(
     license='GPLv3',
     python_requires='>=2.7',
     packages=find_packages(),
-    setup_requires=['setuptools', 'pip>=8.1.2', 'pytest-runner'],
+    setup_requires=['setuptools', 'pytest-runner'],
     tests_require=['pytest'],
-    install_requires=['appdirs>=1.4', 'pathlib;python_version<"3.3"'],
+    install_requires=['appdirs>=1.4'],
     extras_require={
+        ':python_version < "3.3"': ['pathlib'],
         'doctest': ['sphinx>=1.3.1'],
         'doc': [
             'sphinx>=1.3.1',
