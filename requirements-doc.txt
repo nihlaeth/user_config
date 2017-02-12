@@ -24,3 +24,4 @@ Sphinx==1.5.2
 Sphinx-PyPI-upload==0.2.1
 twine==1.8.1
 wrapt==1.10.8
+pip==9.0.1
