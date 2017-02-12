@@ -1,4 +1,5 @@
 """ini configuration file format."""
+import collections
 try:
     import configparser
 except ImportError:
@@ -31,6 +32,9 @@ def ini_validate(_, elements):
 
         >>> TODO
     """
+    if not isinstance(elements, collections.OrderedDict):
+        raise InvalidConfigTree(
+            'elements should be an OrderedDict, not {}'.format(elements))
     for element in elements:
         if not isinstance(elements[element], Section):
             raise InvalidConfigTree(
