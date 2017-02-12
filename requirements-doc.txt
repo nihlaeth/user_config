@@ -23,5 +23,4 @@ snowballstemmer==1.2.1
 Sphinx==1.5.2
 Sphinx-PyPI-upload==0.2.1
 twine==1.8.1
--e hg+git+ssh://git@github.com/nihlaeth/user_config.git@c0f80a2ef6d72c98d60e11f7ba1ec944a39b2d5a#egg=user_config
 wrapt==1.10.8
