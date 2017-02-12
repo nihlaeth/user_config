@@ -151,7 +151,6 @@ Documentation
 
 Planned features
 ================
-* support for multi file configuration
 * multi matching sections / wildcard sections
 * yaml config format
 * json config format
