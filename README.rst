@@ -1,7 +1,8 @@
-===========
 user_config
 ===========
-manage user configuration for python projects
+Manage user configuration for python projects.
+
+For easy and well-documented user-defined configuration.
 
 Fallback order
 ==============
@@ -21,7 +22,7 @@ Other config formats can be supported via plug-ins.
 Requirements
 ============
 * Linux, or Os X, or Windows (but not Windows Vista)
-* python 2.7 or new (python 3.6 supported)
+* python 2.7 or newer (python 3.6 supported)
 * relatively new versions of setuptools and pip (version requirement to follow)
 
 Examples
@@ -62,7 +63,7 @@ Simple configuration example
 
 Command line help text:
 
-.. code-block::
+.. code-block:: shell
 
     $ python examples/simple_example.py -h
     usage: my_application [-h] [--generate-config] [--city CITY] [--street STREET]
@@ -82,14 +83,14 @@ Command line help text:
 
 Command line use with default value:
 
-.. code-block::
+.. code-block:: shell
 
     $ python examples/simple_example.py --age 211
     hello there, unknown person!
 
 Command line use without required value:
 
-.. code-block::
+.. code-block:: shell
 
     $ python examples/simple_example.py
     Traceback (most recent call last):
@@ -105,14 +106,14 @@ Command line use without required value:
 
 Command line use:
 
-.. code-block::
+.. code-block:: shell
 
     $ python examples/simple_example.py --age 211 --name mystery_user
     hello there, mystery_user!
 
 Generate configuration file:
 
-.. code-block::
+.. code-block:: shell
 
     $ python examples/simple_example.py --generate-config
     ## This will be displayed in the configuration documentation.
@@ -139,6 +140,14 @@ Generate configuration file:
 
     ## your name
     # name = unknown person
+
+Documentation
+=============
+
+.. code-block:: shell
+
+    $ pip install -e ".[doc]"
+    $ python setup.py build_sphinx
 
 Planned features
 ================
