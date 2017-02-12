@@ -44,7 +44,8 @@ class TestConfigElement(object):
         assert config_element.has_default()
         assert config_element.get_default() == "test"
 
-    def test_parser(self):
+    def test_parser(self, capsys):
+        # test normal usage
         config_element = ConfigElement()
         config_element.element_name = "test"
         parser = argparse.ArgumentParser(prog="test application")
@@ -54,3 +55,79 @@ class TestConfigElement(object):
         data = {}
         config_element.extract_data_from_parser(arguments, data)
         assert data['test'] == 'success'
+
+        # test absent option
+        config_element = ConfigElement()
+        config_element.element_name = "test"
+        parser = argparse.ArgumentParser(prog="test application")
+        config_element.construct_parser(parser)
+        arguments = vars(parser.parse_args([]))
+        assert arguments['test'] is None
+        data = {}
+        config_element.extract_data_from_parser(arguments, data)
+        assert 'test' not in data
+
+        # test alternate name
+        config_element = ConfigElement(long_name="--testing")
+        config_element.element_name = "test"
+        parser = argparse.ArgumentParser(prog="test application")
+        config_element.construct_parser(parser)
+        arguments = vars(parser.parse_args(['--test', 'success']))
+        assert arguments['testing'] == 'success'
+        data = {}
+        config_element.extract_data_from_parser(arguments, data)
+        assert data['test'] == 'success'
+
+        # test help text
+        config_element = ConfigElement(doc="helpful text")
+        config_element.element_name = "test"
+        parser = argparse.ArgumentParser(prog="test application")
+        config_element.construct_parser(parser)
+        parser.print_help()
+        out, err = capsys.readouterr()
+        assert out == """usage: test application [-h] [--test TEST]
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --test TEST  helpful text
+"""
+        assert err == ""
+
+        # test help text
+        config_element = ConfigElement(
+            doc="helpful text", short_name="t", long_name="test_me")
+        config_element.element_name = "test"
+        parser = argparse.ArgumentParser(prog="test application")
+        config_element.construct_parser(parser)
+        parser.print_help()
+        out, err = capsys.readouterr()
+        assert out == """usage: test application [-h] [-t TEST_ME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TEST_ME, --test_me TEST_ME
+                        helpful text
+"""
+        assert err == ""
+
+    def test_validate(self):
+        config_element = ConfigElement()
+        config_element.element_name = 'test'
+        with pytest.raises(InvalidData):
+            config_element.validate(5)
+        with pytest.raises(InvalidData):
+            config_element.validate_data({'test': 5})
+        config_element.validate("ok")
+
+        config_element = ConfigElement(validate=validate_length)
+        config_element.element_name = 'test'
+        with pytest.raises(InvalidData):
+            config_element.validate("some words")
+        with pytest.raises(InvalidData):
+            config_element.validate_data({'test': "some words"})
+        with pytest.raises(InvalidData):
+            config_element.validate(5)
+        with pytest.raises(InvalidData):
+            config_element.validate_data({'test': 5})
+        config_element.validate("ok")
+        config_element.validate_data({'test': "ok"})
