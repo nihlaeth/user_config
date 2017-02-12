@@ -534,6 +534,13 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
     """
     Base class for application configuration.
 
+    Keyword Arguments
+    -----------------
+    global_path: pathlib.Path, optional
+        overwrite system global configuration path, defaults to None
+    user_path: pathlib.Path, optional
+        overwrite system user configuration path, defaults to None
+
     Raises
     ------
     AttributeError:
@@ -570,7 +577,7 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
     version = None
     _data = None
 
-    def __init__(self):
+    def __init__(self, global_path=None, user_path=None):
         if self.application is None:
             raise AttributeError(
                 'application not set, please provide an application name')
@@ -587,14 +594,17 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
             else:
                 self._data[element] = None
         # read global config
-        paths = AppDirs(self.application, self.author, self.version)
-        global_path = Path(paths.site_config_dir).joinpath(
-            "config.{}".format(self._extension))
+        if global_path is None or user_path is None:
+            paths = AppDirs(self.application, self.author, self.version)
+        if global_path is None:
+            global_path = Path(paths.site_config_dir).joinpath(
+                "config.{}".format(self._extension))
         if global_path.is_file():
             self._read(global_path, self._elements, self._data)
         # read user config
-        user_path = Path(paths.user_config_dir).joinpath(
-            "config.{}".format(self._extension))
+        if user_path is None:
+            user_path = Path(paths.user_config_dir).joinpath(
+                "config.{}".format(self._extension))
         if user_path.is_file():
             self._read(user_path, self._elements, self._data)
         # construct a commandline parser
