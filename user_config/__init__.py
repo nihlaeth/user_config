@@ -26,7 +26,7 @@ class MappingMixin(object):
         return len(self._elements)
 
     def __getitem__(self, key):
-        return self._dict['key']
+        return self._data[key]
 
     def __setitem__(self, key, value):
         if key not in self._elements:
@@ -381,6 +381,7 @@ class Section(ConfigElement, MappingMixin):
         pass
 
     def validate_data(self, _):
+        self.incomplete_count = 0
         for element in self._elements:
             try:
                 self._elements[element].validate_data(self._data)
