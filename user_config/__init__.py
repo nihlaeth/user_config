@@ -88,7 +88,7 @@ class ConfigElement(object):
 
     Raises
     ------
-    InvalidArgument:
+    InvalidData:
         if default value does not pass validation
 
     Attributes

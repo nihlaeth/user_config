@@ -39,7 +39,8 @@ setup(
     license='GPLv3',
     python_requires='>=2.7',
     packages=find_packages(),
-    setup_requires=['pip>=9.0.1'],
+    setup_requires=['pip>=9.0.1', 'pytest-runner'],
+    tests_require=['pytest'],
     install_requires=['appdirs>=1.4', 'pathlib;python_version<"3.3"'],
     extras_require={
         'doctest': ['sphinx>=1.3.1'],
