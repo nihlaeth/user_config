@@ -37,7 +37,7 @@ setup(
     author_email='info@nihlaeth.nl',
     url='https://github.com/nihlaeth/user_config',
     license='GPLv3',
-    python_requires='>=2.6',
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     packages=find_packages(),
     setup_requires=['setuptools', 'pytest-runner'],
     tests_require=['pytest'],
