@@ -1,4 +1,7 @@
 """Installation script for user_config."""
+# pylint: disable=wrong-import-position
+import ez_setup
+ez_setup.use_setuptools()
 from setuptools import setup, find_packages, Command
 
 class Doctest(Command):
