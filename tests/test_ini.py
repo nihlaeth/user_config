@@ -88,3 +88,10 @@ def test_read():
     with pytest.raises(ValueError):
         ini_read(
             None, config_directory / 'data_types.cfg', config_tree, None)
+
+def test_register_extension():
+    result = register_extension()
+    assert result['extension'] == 'cfg'
+    assert result['read'] is ini_read
+    assert result['write'] is ini_write
+    assert result['validate'] is ini_validate
