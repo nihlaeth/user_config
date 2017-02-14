@@ -19,6 +19,8 @@ Badges
         :target: https://travis-ci.org/nihlaeth/user_config
 * .. image:: https://api.codacy.com/project/badge/Grade/bd13a0474ea44c8e8a95e10ef4d89585
         :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Grade
+* .. image:: https://api.codacy.com/project/badge/Coverage/bd13a0474ea44c8e8a95e10ef4d89585
+        :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Coverage
 
 Fallback order
 ==============
