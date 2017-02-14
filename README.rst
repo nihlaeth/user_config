@@ -12,9 +12,13 @@ Links
 
 Badges
 ======
-* .. image:: https://readthedocs.org/projects/user-config/badge/?version=latest :target: http://user-config.readthedocs.io/en/latest/?badge=latest :alt: Documentation Status
-* .. image:: https://travis-ci.org/nihlaeth/user_config.svg?branch=master    :target: https://travis-ci.org/nihlaeth/user_config
-* .. image:: https://api.codacy.com/project/badge/Grade/bd13a0474ea44c8e8a95e10ef4d89585    :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Grade
+* .. image:: https://readthedocs.org/projects/user-config/badge/?version=latest
+        :target: http://user-config.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
+* .. image:: https://travis-ci.org/nihlaeth/user_config.svg?branch=master
+        :target: https://travis-ci.org/nihlaeth/user_config
+* .. image:: https://api.codacy.com/project/badge/Grade/bd13a0474ea44c8e8a95e10ef4d89585
+        :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Grade
 
 Fallback order
 ==============
@@ -160,6 +164,18 @@ Documentation
 
     $ pip install -e ".[doc]"
     $ python setup.py build_sphinx
+
+Testing
+=======
+
+* pytest
+* pytest-cov
+* coverage
+* codacy-coverage
+
+.. code-block:: shell
+
+    $ python -m pytest --cov=user_config --cov-report xml
 
 Planned features
 ================
