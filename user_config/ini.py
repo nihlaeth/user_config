@@ -45,7 +45,7 @@ def ini_validate(_, elements):
                 raise InvalidConfigTree(
                     'nested sections are not supported for ini files')
 
-def ini_read(_, path, elements, data):
+def ini_read(_, path, elements, _data):
     """
     Read ini configuration file and populate `data`.
 
@@ -82,8 +82,16 @@ def ini_read(_, path, elements, data):
             try:
                 if keys[key].type_ == bool:
                     values[key] = config.getboolean(section, key)
+                elif keys[key].type_ == str:
+                    value = config.get(section, key)
+                    if value != '':
+                        values[key] = value
                 else:
                     values[key] = keys[key].type_(config.get(section, key))
+            except ValueError:
+                # if the value is empty string, not defined, ignore
+                if config.get(section, key) != '':
+                    raise
             except configparser.NoOptionError:
                 pass
             except configparser.NoSectionError:
@@ -122,7 +130,7 @@ def _print_item(key, item, value):
                 print("    {}".format(line))
     print("")
 
-def ini_write(_, elements, data, doc):
+def ini_write(_, elements, _data, doc):
     """
     Print default ini file.
 
