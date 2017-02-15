@@ -95,3 +95,379 @@ def test_register_extension():
     assert result['read'] is ini_read
     assert result['write'] is ini_write
     assert result['validate'] is ini_validate
+
+# pylint: disable=no-self-use
+class TestWrite(object):
+
+    def test_class_docstring(self, capsys):
+        empty_elements = OrderedDict()
+        one_section = OrderedDict(section=Section())
+        doc = "test"
+
+        # empty
+        ini_write(None, empty_elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == ""
+        assert err == ""
+
+        # only docstring
+        ini_write(None, empty_elements, None, doc)
+        out, err = capsys.readouterr()
+        assert out == "## test\n\n"
+        assert err == ""
+
+        # only section
+        ini_write(None, one_section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n\n"
+        assert err == ""
+
+        # docstring and section
+        ini_write(None, one_section, None, doc)
+        out, err = capsys.readouterr()
+        assert out == "## test\n\n[section]\n\n"
+        assert err == ""
+
+    def test_section(self, capsys):
+        # empty section
+        empty_section = OrderedDict(section=Section())
+        ini_write(None, empty_section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n\n"
+        assert err == ""
+
+        # section with docstring
+        section = OrderedDict(section=Section(doc="test"))
+        ini_write(None, section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n## test\n\n\n"
+        assert err == ""
+
+        # optional section
+        optional_section = OrderedDict(section=Section(required=False))
+        ini_write(None, optional_section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n## OPTIONAL_SECTION\n\n\n"
+        assert err == ""
+
+        # optional section with docstring
+        section = OrderedDict(
+            section=Section(doc="test", required=False))
+        ini_write(None, section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n## test\n## OPTIONAL_SECTION\n\n\n"
+        assert err == ""
+
+        # multiple sections
+        section = OrderedDict(
+            first_section=Section(),
+            section=Section(doc="test"),
+            last_section=Section())
+        ini_write(None, section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[first_section]\n\n[section]\n## test\n\n\n[last_section]\n\n"
+        assert err == ""
+
+        # optional section with content
+        optional_section = OrderedDict(section=Section(
+            string=StringOption(default="value"), required=False))
+        optional_section['section'].get_default()
+        ini_write(None, optional_section, None, None)
+        out, err = capsys.readouterr()
+        assert out == "[section]\n## OPTIONAL_SECTION\n\n# string = value\n\n\n"
+        assert err == ""
+
+    def test_item_default(self, capsys):
+        # required item with default value
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=True)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item with default value
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=False)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # required item without default value
+        elements = OrderedDict(section=Section(
+            string=StringOption(required=True)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## REQUIRED",
+            "# string = ",
+            "string = ",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item without default value
+        elements = OrderedDict(section=Section(
+            string=StringOption(required=False)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = ",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+    def test_item_overwriting(self, capsys):
+        # required item with default value, overwritten
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=True)))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "string = overwritten",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item with default value, overwritten
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=False)))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "string = overwritten",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # required item without default value, overwritten
+        elements = OrderedDict(section=Section(
+            string=StringOption(required=True)))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## REQUIRED",
+            "# string = ",
+            "string = overwritten",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item without default value, overwritten
+        elements = OrderedDict(section=Section(
+            string=StringOption(required=False)))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = ",
+            "string = overwritten",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+    def test_item_docstring(self, capsys):
+        # required item with default value, with docstring
+        elements = OrderedDict(section=Section(
+            string=StringOption(
+                doc="test", default="value", required=True)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## test",
+            "# string = value",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item with default value, with docstring
+        elements = OrderedDict(section=Section(
+            string=StringOption(
+                doc="test", default="value", required=False)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## test",
+            "# string = value",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # required item without default value, with docstring
+        elements = OrderedDict(section=Section(
+            string=StringOption(doc="test", required=True)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## test",
+            "## REQUIRED",
+            "# string = ",
+            "string = ",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # optional item without default value, with docstring
+        elements = OrderedDict(section=Section(
+            string=StringOption(doc="test", required=False)))
+        elements['section'].get_default()
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "## test",
+            "# string = ",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+    def test_item_data_types(self, capsys):
+        # string, with default
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=False)))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "string = overwritten",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # multiline string, with default
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="a\nb\nc", required=False)))
+        elements['section'].get_default()
+        elements['section'].string = "d\ne\nf"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = a",
+            "#     b",
+            "#     c",
+            "string = d",
+            "    e",
+            "    f",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # integer, with default
+        elements = OrderedDict(section=Section(
+            integer=IntegerOption(default=7, required=False)))
+        elements['section'].get_default()
+        elements['section'].integer = 8
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# integer = 7",
+            "integer = 8",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # float, with default
+        elements = OrderedDict(section=Section(
+            float=FloatOption(default=2., required=False)))
+        elements['section'].get_default()
+        elements['section'].float = 3.5
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# float = 2.0",
+            "float = 3.5",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # boolean, with default
+        elements = OrderedDict(section=Section(
+            boolean=BooleanOption(default=True, required=False)))
+        elements['section'].get_default()
+        elements['section'].boolean = False
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# boolean = True",
+            "boolean = False",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+    def test_sequential_items(self, capsys):
+        elements = OrderedDict(section=Section(
+            string=StringOption(default="value", required=False),
+            item_two=StringOption(doc="option two", default="2")))
+        elements['section'].get_default()
+        elements['section'].string = "overwritten"
+        ini_write(None, elements, None, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string = value",
+            "string = overwritten",
+            "",
+            "## option two",
+            "# item_two = 2",
+            "",
+            "",
+            ""])
+        assert err == ""

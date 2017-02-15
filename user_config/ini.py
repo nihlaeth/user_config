@@ -105,10 +105,11 @@ def _print_item(key, item, value):
         for line in doc_string:
             print("## {}".format(line))
 
+    # TODO: display data type
     # print default
     if item.has_default():
         # handle multiline strings
-        lines = item.get_default().split('\n')
+        lines = str(item.get_default()).split('\n')
         print("# {} = {}".format(key, lines[0]))
         if len(lines) > 1:
             for line in lines[1:]:
@@ -123,7 +124,7 @@ def _print_item(key, item, value):
         print("{} = ".format(key))
     elif value is not None and value != item.get_default():
         # handle multiline strings
-        lines = value.split('\n')
+        lines = str(value).split('\n')
         print("{} = {}".format(key, lines[0]))
         if len(lines) > 1:
             for line in lines[1:]:
