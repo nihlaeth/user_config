@@ -218,17 +218,22 @@ class TestBooleanOption(object):
         config_element.extract_data_from_parser(arguments, data)
         assert data['all_good'] is True
 
+# pylint: disable=missing-docstring,function-redefined,attribute-defined-outside-init
+class EmptySection(Section):
+
+    pass
+
 class TestSection(object):
 
     def test_init(self):
-        section = Section(default=42)
-        assert section.get_default() is section
-        section = Section(default=None)
-        assert section.has_default()
-        assert len(section) == 0
-        with pytest.raises(AttributeError):
-            section = Section(keyword="not a config element")
-        section = Section(name=StringOption(default="test"))
+        empty_section = EmptySection()
+        assert empty_section.has_default()
+        assert empty_section.get_default() is empty_section
+        assert len(empty_section) == 0
+
+        class MySection(Section):
+            name = StringOption(default="test")
+        section = MySection()
         section.get_default()
 
         # test map methods
@@ -254,59 +259,56 @@ class TestSection(object):
 
     def test_incomplete_count(self):
         # test optional section
-        section = Section(
-            required=False,
-            one=IntegerOption(),
-            two=IntegerOption(required=False))
-        section.get_default()
-        section.element_name = "section"
+        class MySection(Section):
+            one = IntegerOption()
+            two = IntegerOption(required=False)
+        optional_section = MySection(required=False)
+        optional_section.get_default()
+        optional_section.element_name = "section"
         parser = argparse.ArgumentParser(prog="test application")
-        section.construct_parser(parser)
+        optional_section.construct_parser(parser)
 
         # missing required value
         arguments = vars(parser.parse_args([]))
-        section.extract_data_from_parser(arguments, None)
-        section.validate_data(None)
-        assert section.incomplete_count == 1
+        optional_section.extract_data_from_parser(arguments, None)
+        optional_section.validate_data(None)
+        assert optional_section.incomplete_count == 1
 
         # missing required value, optional value provided
         arguments = vars(parser.parse_args(['--two', '42']))
-        section.extract_data_from_parser(arguments, None)
-        section.validate_data(None)
-        assert section.incomplete_count == 1
+        optional_section.extract_data_from_parser(arguments, None)
+        optional_section.validate_data(None)
+        assert optional_section.incomplete_count == 1
 
         # required value provided
         arguments = vars(parser.parse_args(['--one', '5']))
-        section.extract_data_from_parser(arguments, None)
-        section.validate_data(None)
-        assert section.incomplete_count == 0
+        optional_section.extract_data_from_parser(arguments, None)
+        optional_section.validate_data(None)
+        assert optional_section.incomplete_count == 0
 
         # test required section
-        section = Section(
-            required=True,
-            one=IntegerOption(),
-            two=IntegerOption(required=False))
-        section.get_default()
-        section.element_name = "section"
+        required_section = MySection(required=True)
+        required_section.get_default()
+        required_section.element_name = "section"
         parser = argparse.ArgumentParser(prog="test application")
-        section.construct_parser(parser)
+        required_section.construct_parser(parser)
 
         # missing required value
         arguments = vars(parser.parse_args([]))
-        section.extract_data_from_parser(arguments, None)
+        required_section.extract_data_from_parser(arguments, None)
         with pytest.raises(MissingData):
-            section.validate_data(None)
-        assert section.incomplete_count == 0
+            required_section.validate_data(None)
+        assert required_section.incomplete_count == 0
 
         # missing required value, optional value provided
         arguments = vars(parser.parse_args(['--two', '42']))
-        section.extract_data_from_parser(arguments, None)
+        required_section.extract_data_from_parser(arguments, None)
         with pytest.raises(MissingData):
-            section.validate_data(None)
-        assert section.incomplete_count == 0
+            required_section.validate_data(None)
+        assert required_section.incomplete_count == 0
 
         # required value provided
         arguments = vars(parser.parse_args(['--one', '5']))
-        section.extract_data_from_parser(arguments, None)
-        section.validate_data(None)
-        assert section.incomplete_count == 0
+        required_section.extract_data_from_parser(arguments, None)
+        required_section.validate_data(None)
+        assert required_section.incomplete_count == 0

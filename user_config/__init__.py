@@ -6,6 +6,109 @@ import argparse
 from pkg_resources import iter_entry_points
 from appdirs import AppDirs
 
+def with_metaclass(meta, *bases):
+    """
+    Create a base class with a metaclass.
+
+    Drops the middle class upon creation.
+    Source: http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
+
+    Parameters
+    ----------
+    meta: type
+        meta class or function
+    *bases: object
+        parents of class to be created
+
+    Raises
+    ------
+    None
+
+    Returns
+    -------
+    class of type `name`
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
+    """
+    class MetaClass(meta):
+        """Man-in-the-middle class."""
+        __call__ = type.__call__
+        __init__ = type.__init__
+
+        def __new__(cls, name, this_bases, dictionary):
+            if this_bases is None:
+                return type.__new__(cls, name, (), dictionary)
+            return meta(name, bases, dictionary)
+    return MetaClass('temporary_class', None, {})
+
+class ConfigMeta(type):
+
+    """
+    ORM-like magic for configuration class.
+
+    Gather all `ConfigElement` attributes into `_elements` and
+    get correct `_validate`, `_read` and `_writer` functions.
+
+    Parameters
+    ----------
+    cls_name: str
+        class name
+    cls_parents: Tuple[class]
+        class parents
+    cls_attributes: Dict
+        class attributes
+
+    Raises
+    ------
+    AttributeError:
+        if class tries to overwrite a reserved attribute
+    ImportError:
+        if no appropriate `entry_point` could be found for `file_type`
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
+    """
+    def __new__(mcs, cls_name, cls_parents, cls_attributes):
+        reserved_names = [
+            '_elements',
+            '_extension',
+            '_read',
+            '_write',
+            '_validate']
+        new_attributes = {'_elements': collections.OrderedDict()}
+        for attribute in cls_attributes:
+            if attribute in reserved_names:
+                raise AttributeError(
+                    '{} is a reserved attribute for Config classes'.format(
+                        attribute))
+            elif isinstance(cls_attributes[attribute], ConfigElement):
+                new_attributes['_elements'][attribute] = cls_attributes[attribute]
+                new_attributes['_elements'][attribute].element_name = attribute
+            elif attribute == 'file_type':
+                file_types = {}
+                for entry_point in iter_entry_points('user_config.file_type'):
+                    # TODO: deal with duplicate entry point names
+                    file_types[entry_point.name] = entry_point
+                if cls_attributes[attribute] not in file_types:
+                    raise ImportError(
+                        'no entry point found for file type {}'.format(
+                            cls_attributes[attribute]))
+                extension = file_types[cls_attributes[attribute]].load()()
+                new_attributes['_extension'] = extension['extension']
+                new_attributes['_read'] = extension['read']
+                new_attributes['_write'] = extension['write']
+                new_attributes['_validate'] = extension['validate']
+            else:
+                new_attributes[attribute] = cls_attributes[attribute]
+        return type.__new__(mcs, cls_name, cls_parents, new_attributes)
+
 class MappingMixin(object):
 
     """Methods for emulating a mapping type."""
@@ -278,30 +381,20 @@ class ConfigElement(object):
         if data[self.element_name] is not None:
             self.validate(data[self.element_name])
 
-class Section(ConfigElement, MappingMixin):
+class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
 
     """
     Named container that contains ConfigElements.
 
     Keyword Arguments
     -----------------
-    doc: str, optional
-        documentation for this option, defaults to None
-    default: Any, optional
-        IGNORED
     required: bool, optional
         MUST section be present? If no default is provided for any
         required content elements, this can result in a
         MissingData exception. to find out if an optional section
         is complete, see `self.incomplete_count`. Defaults to True
-    short_name: str, optional
-        IGNORED
-    long_name: str, optional
-        IGNORED
     validate: Callable[Any, None], optional
         additional validation function, defaults to None
-    **content: ConfigElement, optional
-        content of section
 
     Raises
     ------
@@ -323,33 +416,17 @@ class Section(ConfigElement, MappingMixin):
     """
 
     incomplete_count = 0
-    _elements = None
-    _data = None
 
     def __init__(
             self,
-            doc=None,
-            default=None,
             required=True,
-            short_name=None,
-            long_name=None,
-            validate=None,
-            **content):
-        self._elements = collections.OrderedDict()
+            validate=None):
         self._data = collections.OrderedDict()
         ConfigElement.__init__(
             self,
-            doc=doc,
+            doc=self.__doc__,
             required=required,
-            short_name=short_name,
-            long_name=long_name,
             validate=validate)
-        for element in content:
-            if not isinstance(content[element], ConfigElement):
-                raise AttributeError(
-                    '{} is not a ConfigElement'.format(element))
-            content[element].element_name = element
-            self._elements[element] = content[element]
 
     def has_default(self):
         """Return True because Section always has a default value."""
@@ -414,109 +491,6 @@ class BooleanOption(ConfigElement):
     """Configuration element with boolean value."""
 
     type_ = bool
-
-def with_metaclass(meta, *bases):
-    """
-    Create a base class with a metaclass.
-
-    Drops the middle class upon creation.
-    Source: http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
-
-    Parameters
-    ----------
-    meta: type
-        meta class or function
-    *bases: object
-        parents of class to be created
-
-    Raises
-    ------
-    None
-
-    Returns
-    -------
-    class of type `name`
-
-    Examples
-    --------
-    ..doctest::
-
-        >>> TODO
-    """
-    class MetaClass(meta):
-        """Man-in-the-middle class."""
-        __call__ = type.__call__
-        __init__ = type.__init__
-
-        def __new__(cls, name, this_bases, dictionary):
-            if this_bases is None:
-                return type.__new__(cls, name, (), dictionary)
-            return meta(name, bases, dictionary)
-    return MetaClass('temporary_class', None, {})
-
-class ConfigMeta(type):
-
-    """
-    ORM-like magic for configuration class.
-
-    Gather all `ConfigElement` attributes into `_elements` and
-    get correct `_validate`, `_read` and `_writer` functions.
-
-    Parameters
-    ----------
-    cls_name: str
-        class name
-    cls_parents: Tuple[class]
-        class parents
-    cls_attributes: Dict
-        class attributes
-
-    Raises
-    ------
-    AttributeError:
-        if class tries to overwrite a reserved attribute
-    ImportError:
-        if no appropriate `entry_point` could be found for `file_type`
-
-    Examples
-    --------
-    ..doctest::
-
-        >>> TODO
-    """
-    def __new__(mcs, cls_name, cls_parents, cls_attributes):
-        reserved_names = [
-            '_elements',
-            '_extension',
-            '_read',
-            '_write',
-            '_validate']
-        new_attributes = {'_elements': collections.OrderedDict()}
-        for attribute in cls_attributes:
-            if attribute in reserved_names:
-                raise AttributeError(
-                    '{} is a reserved attribute for Config classes'.format(
-                        attribute))
-            elif isinstance(cls_attributes[attribute], ConfigElement):
-                new_attributes['_elements'][attribute] = cls_attributes[attribute]
-                new_attributes['_elements'][attribute].element_name = attribute
-            elif attribute == 'file_type':
-                file_types = {}
-                for entry_point in iter_entry_points('user_config.file_type'):
-                    # TODO: deal with duplicate entry point names
-                    file_types[entry_point.name] = entry_point
-                if cls_attributes[attribute] not in file_types:
-                    raise ImportError(
-                        'no entry point found for file type {}'.format(
-                            cls_attributes[attribute]))
-                extension = file_types[cls_attributes[attribute]].load()()
-                new_attributes['_extension'] = extension['extension']
-                new_attributes['_read'] = extension['read']
-                new_attributes['_write'] = extension['write']
-                new_attributes['_validate'] = extension['validate']
-            else:
-                new_attributes[attribute] = cls_attributes[attribute]
-        return type.__new__(mcs, cls_name, cls_parents, new_attributes)
 
 class InvalidConfigTree(Exception):
 

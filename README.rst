@@ -60,20 +60,23 @@ Simple configuration example
 
         application = "my_application"
         author = "me"
-        general = Section(
-            name=StringOption(
+
+        class GeneralSection(Section):
+            """General information."""
+            name = StringOption(
                 doc="your name",
-                default="unknown person"),
-            age=IntegerOption(
+                default="unknown person")
+            age = IntegerOption(
                 doc="your age",
-                required=True))
-        address = Section(
-            street=StringOption(
+                required=True)
+        general = GeneralSection()
+        class AddressSection(Section):
+            """shipping address"""
+            street = StringOption(
                 doc="street including house number",
-                required=True),
-            city=StringOption(required=True),
-            required=False,
-            doc="shipping address")
+                required=True)
+            city = StringOption(required=True)
+        address = AddressSection(required=False)
 
     if __name__ == "__main__":
         CONFIG = MyConfig()
@@ -112,13 +115,13 @@ Command line use without required value:
 
     $ python examples/simple_example.py
     Traceback (most recent call last):
-      File "examples/simple_example.py", line 26, in <module>
+      File "examples/simple_example.py", line 29, in <module>
         CONFIG = MyConfig()
-      File "/git/user_config/user_config/user_config/__init__.py", line 541, in __init__
+      File "/git/user_config/user_config/user_config/__init__.py", line 622, in __init__
         self._elements[element].validate_data(self._data)
-      File "/git/user_config/user_config/user_config/__init__.py", line 322, in validate_data
+      File "/git/user_config/user_config/user_config/__init__.py", line 464, in validate_data
         self._elements[element].validate_data(self._data)
-      File "/git/user_config/user_config/user_config/__init__.py", line 216, in validate_data
+      File "/git/user_config/user_config/user_config/__init__.py", line 380, in validate_data
         self.element_name))
     user_config.MissingData: no value was provided for required option age
 
@@ -136,28 +139,32 @@ Generate configuration file:
     $ python examples/simple_example.py --generate-config
     ## This will be displayed in the configuration documentation.
 
+    [general]
+    ## General information.
+
+    ## your name
+    # name = unknown person
+    name = tamara
+
+    ## your age
+    ## REQUIRED
+    # age = 
+    age = 
+
+
     [address]
     ## shipping address
     ## OPTIONAL_SECTION
-
-    ## REQUIRED
-    # city = 
-    city = 
 
     ## street including house number
     ## REQUIRED
     # street = 
     street = 
 
-
-    [general]
-    ## your age
     ## REQUIRED
-    # age = 
-    age = 
+    # city = 
+    city = 
 
-    ## your name
-    # name = unknown person
 
 Documentation
 =============

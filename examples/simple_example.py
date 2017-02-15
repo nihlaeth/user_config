@@ -7,20 +7,23 @@ class MyConfig(Config):
 
     application = "my_application"
     author = "me"
-    general = Section(
-        name=StringOption(
+
+    class GeneralSection(Section):
+        """General information."""
+        name = StringOption(
             doc="your name",
-            default="unknown person"),
-        age=IntegerOption(
+            default="unknown person")
+        age = IntegerOption(
             doc="your age",
-            required=True))
-    address = Section(
-        street=StringOption(
+            required=True)
+    general = GeneralSection()
+    class AddressSection(Section):
+        """shipping address"""
+        street = StringOption(
             doc="street including house number",
-            required=True),
-        city=StringOption(required=True),
-        required=False,
-        doc="shipping address")
+            required=True)
+        city = StringOption(required=True)
+    address = AddressSection(required=False)
 
 if __name__ == "__main__":
     CONFIG = MyConfig()
