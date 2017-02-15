@@ -630,6 +630,3 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
                 command_line_arguments, self._data)
             # validate _data
             self._elements[element].validate_data(self._data)
-
-    def __getattr__(self, name):
-        return self._data[name]
