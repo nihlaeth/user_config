@@ -83,14 +83,15 @@ class ConfigMeta(type):
             '_write',
             '_validate']
         new_attributes = {'_elements': collections.OrderedDict()}
+        fields = {}
         for attribute in cls_attributes:
             if attribute in reserved_names:
                 raise AttributeError(
                     '{} is a reserved attribute for Config classes'.format(
                         attribute))
             elif isinstance(cls_attributes[attribute], ConfigElement):
-                new_attributes['_elements'][attribute] = cls_attributes[attribute]
-                new_attributes['_elements'][attribute].element_name = attribute
+                fields[attribute] = cls_attributes[attribute]
+                fields[attribute].element_name = attribute
             elif attribute == 'file_type':
                 file_types = {}
                 for entry_point in iter_entry_points('user_config.file_type'):
@@ -107,6 +108,9 @@ class ConfigMeta(type):
                 new_attributes['_validate'] = extension['validate']
             else:
                 new_attributes[attribute] = cls_attributes[attribute]
+        for attribute in sorted(
+                fields, key=lambda name: fields[name].creation_counter):
+            new_attributes['_elements'][attribute] = fields[attribute]
         return type.__new__(mcs, cls_name, cls_parents, new_attributes)
 
 class MappingMixin(object):
@@ -196,6 +200,8 @@ class ConfigElement(object):
 
     Attributes
     ----------
+    creation_counter: int
+        global count of config elements, used to maintain field order
     element_name: str
         name of instance, provided by containing class
     type_: type
@@ -207,6 +213,7 @@ class ConfigElement(object):
 
         >>> TODO
     """
+    creation_counter = 0
     element_name = None
     type_ = str
 
@@ -218,6 +225,9 @@ class ConfigElement(object):
             short_name=None,
             long_name=None,
             validate=None):
+        # Store the creation index in the instance "creation_counter"
+        self.creation_counter = ConfigElement.creation_counter
+        ConfigElement.creation_counter += 1
         self.doc = doc
         self._default = default
         self.required = required
