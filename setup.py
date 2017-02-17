@@ -1,7 +1,7 @@
 """Installation script for user_config."""
 # pylint: disable=wrong-import-position
-import ez_setup
-ez_setup.use_setuptools()
+# import ez_setup
+# ez_setup.use_setuptools()
 from setuptools import setup, find_packages, Command
 
 class Doctest(Command):
@@ -42,7 +42,7 @@ setup(
     license='GPLv3',
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     packages=find_packages(),
-    setup_requires=['setuptools', 'pytest-runner'],
+    setup_requires=['setuptools>=24.2.1', 'pytest-runner'],
     tests_require=['pytest'],
     install_requires=['appdirs>=1.4'],
     extras_require={
