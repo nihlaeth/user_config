@@ -47,6 +47,7 @@ setup(
     install_requires=['appdirs>=1.4'],
     extras_require={
         ':python_version <= "3.3"': ['pathlib'],
+        'deploy': ['pytest', 'coverage', 'python-codacy-coverage'],
         'doctest': ['sphinx>=1.3.1'],
         'doc': [
             'sphinx>=1.3.1',
