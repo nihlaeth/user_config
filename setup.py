@@ -1,11 +1,12 @@
 """Installation script for user_config."""
 # pylint: disable=wrong-import-position
+import sys
 from pkg_resources import get_distribution, VersionConflict
 try:
     get_distribution('setuptools>=24.2.1')
 except VersionConflict:
-    import ez_setup
-    ez_setup.use_setuptools()
+    print("setuptools version 24.2.1 required, please upgrade!")
+    sys.exit(False)
 from setuptools import setup, find_packages, Command
 
 class Doctest(Command):
