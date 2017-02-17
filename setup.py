@@ -1,7 +1,9 @@
 """Installation script for user_config."""
 # pylint: disable=wrong-import-position
-from pkg_resources import get_distribution
-if get_distribution('setuptools>=24.2.1') is None:
+from pkg_resources import get_distribution, VersionConflict
+try:
+    get_distribution('setuptools>=24.2.1')
+except VersionConflict:
     import ez_setup
     ez_setup.use_setuptools()
 from setuptools import setup, find_packages, Command
