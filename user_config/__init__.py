@@ -492,6 +492,11 @@ class StringListOption(ConfigElement):
         else:
             self._value = command_line_arguments[name]
 
+    def _validate_item(self, value):
+        if not isinstance(value, self.subtype):
+            raise InvalidData('expected a {}, not {}'.format(
+                self.subtype, value))
+
     def validate(self, value):
         if value is None:
             return
@@ -499,77 +504,114 @@ class StringListOption(ConfigElement):
             raise InvalidData('expected a {}, not {}'.format(
                 self.type_, value))
         for item in value:
-            if not isinstance(item, self.subtype):
-                raise InvalidData('expected a {}, not {}'.format(
-                    self.subtype, item))
+            self._validate_item(item)
         if self._validate is not None:
             self._validate(value)
 
-    def append(self):
-        raise NotImplementedError
+    def append(self, value):
+        """Append value to option."""
+        self._validate_item(value)
+        self._value.append(value)
 
-    def count(self):
-        raise NotImplementedError
+    def count(self, value):
+        """Count occurrence of value."""
+        return self._value.count(value)
 
-    def index(self):
-        raise NotImplementedError
+    def index(self, value):
+        """Return index of first occurrence of value."""
+        return self._value.index(value)
 
-    def extend(self):
-        raise NotImplementedError
+    def extend(self, extension):
+        """Extend value of option with extension."""
+        self.validate(extension)
+        self._value.extend(extension)
 
-    def insert(self):
-        raise NotImplementedError
+    def insert(self, index, value):
+        """Insert value at index or slice."""
+        if isinstance(index, int):
+            self._validate_item(value)
+        else:
+            self.validate(value)
+        self._value.insert(index, value)
 
-    def pop(self):
-        raise NotImplementedError
+    def pop(self, index=-1):
+        """Remove and return value at index."""
+        return self._value.pop(index)
 
-    def remove(self):
-        raise NotImplementedError
+    def remove(self, value):
+        """Remove value at index."""
+        self._value.remove(value)
 
     def reverse(self):
-        raise NotImplementedError
+        """Reverse list in place."""
+        self._value.reverse()
 
-    def sort(self):
-        raise NotImplementedError
+    def sort(self, key=None, reverse=None):
+        """Sort list in place."""
+        self._value.sort(key, reverse)
 
-    def __add__(self):
-        raise NotImplementedError
+    def __add__(self, other):
+        self.validate(other)
+        return self._value + other
 
-    def __radd__(self):
-        raise NotImplementedError
+    def __radd__(self, other):
+        return self.__add__(other)
 
-    def __iadd__(self):
-        raise NotImplementedError
+    def __iadd__(self, other):
+        self.validate(other)
+        self._value += other
 
-    def __mul__(self):
-        raise NotImplementedError
+    def __mul__(self, other):
+        return self._value * other
 
-    def __rmul__(self):
-        raise NotImplementedError
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
-    def __imul__(self):
-        raise NotImplementedError
+    def __imul__(self, other):
+        self._value *= other
 
-    def __contains__(self):
-        raise NotImplementedError
+    def __contains__(self, value):
+        return value in self._value
 
     def __iter__(self):
-        raise NotImplementedError
+        return iter(self._value)
 
-    def __getitem__(self):
-        raise NotImplementedError
+    def __getitem__(self, index):
+        return self._value[index]
 
-    def __setitem__(self):
-        raise NotImplementedError
+    def __setitem__(self, index, value):
+        if isinstance(index, int):
+            self._validate_item(value)
+        else:
+            self.validate(value)
+        self._value[index] = value
 
-    def __delitem__(self):
-        raise NotImplementedError
+    def __delitem__(self, index):
+        del self._value[index]
 
     def __len__(self):
-        raise NotImplementedError
+        return len(self._value)
 
     def __reversed__(self):
-        raise NotImplementedError
+        return reversed(self._value)
+
+class IntegerListOption(StringListOption):
+
+    """List configuration element with integer content."""
+
+    subtype = int
+
+class FloatListOption(StringListOption):
+
+    """List configuration element with float content."""
+
+    subtype = float
+
+class BooleanListOption(StringListOption):
+
+    """List configuration element with boolean content."""
+
+    subtype = bool
 
 class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
 
