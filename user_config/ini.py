@@ -39,13 +39,13 @@ def ini_validate(_, elements):
         if not isinstance(elements[element], Section):
             raise InvalidConfigTree(
                 'root element can only contain Section elements for ini files')
-        sub_elements, _ = elements[element].get_elements()
+        sub_elements = elements[element].get_elements()
         for sub_element in sub_elements:
             if isinstance(sub_elements[sub_element], Section):
                 raise InvalidConfigTree(
                     'nested sections are not supported for ini files')
 
-def ini_read(_, path, elements, _data):
+def ini_read(_, path, elements):
     """
     Read ini configuration file and populate `data`.
 
@@ -57,8 +57,6 @@ def ini_read(_, path, elements, _data):
         path to configuration file
     elements: Dict[ConfigElement]
         configuration element tree
-    data: Dict
-        data tree
 
     Raises
     ------
@@ -77,17 +75,18 @@ def ini_read(_, path, elements, _data):
     config = configparser.ConfigParser()
     config.read(str(path))
     for section in elements:
-        keys, values = elements[section].get_elements()
+        keys = elements[section].get_elements()
         for key in keys:
             try:
                 if keys[key].type_ == bool:
-                    values[key] = config.getboolean(section, key)
+                    keys[key].set_value(config.getboolean(section, key))
                 elif keys[key].type_ == str:
                     value = config.get(section, key)
                     if value != '':
-                        values[key] = value
+                        keys[key].set_value(value)
                 else:
-                    values[key] = keys[key].type_(config.get(section, key))
+                    keys[key].set_value(
+                        keys[key].type_(config.get(section, key)))
             except ValueError:
                 # if the value is empty string, not defined, ignore
                 if config.get(section, key) != '':
@@ -131,7 +130,7 @@ def _print_item(key, item, value):
                 print("    {}".format(line))
     print("")
 
-def ini_write(_, elements, _data, doc):
+def ini_write(_, elements, doc):
     """
     Print default ini file.
 
@@ -143,8 +142,6 @@ def ini_write(_, elements, _data, doc):
         IGNORED
     elements: Dict[ConfigElement]
         configuration element tree
-    data: Dict
-        data tree
     doc: Option[str]
         `Config` class docstring
 
@@ -181,9 +178,9 @@ def ini_write(_, elements, _data, doc):
         if elements[section].doc is not None or not elements[section].required:
             print("")
 
-        keys, values = elements[section].get_elements()
+        keys = elements[section].get_elements()
         for key in keys:
-            _print_item(key, keys[key], values[key])
+            _print_item(key, keys[key], keys[key].get_value())
         print("")
 
 def register_extension():

@@ -118,7 +118,9 @@ class MappingMixin(object):
     """Methods for emulating a mapping type."""
 
     def __getattr__(self, key):
-        return self._data[key]
+        if isinstance(self._elements[key], MappingMixin):
+            return self._elements[key]
+        return self._elements[key].get_value()
 
     def __setattr__(self, key, value):
         if key in self.__dict__:
@@ -126,51 +128,57 @@ class MappingMixin(object):
         elif self._elements is None or key not in self._elements:
             self.__dict__[key] = value
         else:
-            self._elements[key].validate(value)
-            self._data[key] = value
+            self._elements[key].set_value(value)
 
     def __len__(self):
         return len(self._elements)
 
     def __getitem__(self, key):
-        return self._data[key]
+        if isinstance(self._elements[key], MappingMixin):
+            return self._elements[key]
+        return self._elements[key].get_value()
 
     def __setitem__(self, key, value):
         if key not in self._elements:
             raise AttributeError(
                 'no field with name {}'.format(key))
-        self._elements[key].validate(value)
-        self._data[key] = value
+        self._elements[key].set_value(value)
 
     def __iter__(self):
-        return iter(self._data)
+        return iter(self._elements)
 
     def __reversed__(self):
-        return reversed(self._data)
+        return reversed(self._elements)
 
     def __contains__(self, item):
         return item in self._elements
 
     def keys(self):
         """Return a view of dictionary keys."""
-        return self._data.keys()
+        return self._elements.keys()
 
     def values(self):
         """Return a view of dictionary values."""
-        return self._data.values()
+        return self._elements.values()
 
     def items(self):
         """Return a view of dictionary key, value pairs."""
-        return self._data.items()
+        return self._elements.items()
 
     def get(self, key, default):
         """Get items without risking a KeyError."""
-        return self._data.get(key, default)
+        if key not in self._elements:
+            return default
+        else:
+            if isinstance(self._elements[key], MappingMixin):
+                return self._elements[key]
+            return self._elements[key].get_value()
 
     def update(self, *args, **kwargs):
         """Update more than one key at a time."""
         # TODO: validate
-        self._data.update(*args, **kwargs)
+        # self._elements.update(*args, **kwargs)
+        raise NotImplementedError
 
 class ConfigElement(object):
 
@@ -206,6 +214,8 @@ class ConfigElement(object):
         name of instance, provided by containing class
     type_: type
         python type of variable that this class represents
+    action: str
+        action for argparse
 
     Examples
     --------
@@ -216,6 +226,8 @@ class ConfigElement(object):
     creation_counter = 0
     element_name = None
     type_ = str
+    action = 'store'
+    _value = None
 
     def __init__(
             self,
@@ -230,6 +242,7 @@ class ConfigElement(object):
         ConfigElement.creation_counter += 1
         self.doc = doc
         self._default = default
+        self._value = default
         self.required = required
         if short_name is None or short_name.startswith('-'):
             self._short_name = short_name
@@ -251,6 +264,15 @@ class ConfigElement(object):
     def get_default(self):
         """Return default value."""
         return self._default
+
+    def get_value(self):
+        """Return current option value."""
+        return self._value
+
+    def set_value(self, value):
+        """Validate and store value."""
+        self.validate(value)
+        self._value = value
 
     def construct_parser(self, parser):
         """
@@ -284,7 +306,7 @@ class ConfigElement(object):
             name.append("--{}".format(self.element_name))
         parser.add_argument(
             *name,
-            action='store',
+            action=self.action,
             #nargs=1,
             default=None,
             type=self.type_,
@@ -292,7 +314,7 @@ class ConfigElement(object):
             required=False,
             help=self.doc)
 
-    def extract_data_from_parser(self, command_line_arguments, data):
+    def extract_data_from_parser(self, command_line_arguments):
         """
         Get value from parser.
 
@@ -300,9 +322,6 @@ class ConfigElement(object):
         ----------
         command_line_arguments: argparse.Namespace
             parsed arguments
-        data: Dict
-            dictionary to put values in (assumes tree structure is
-            already in place)
 
         Raises
         ------
@@ -321,7 +340,7 @@ class ConfigElement(object):
         name = self.element_name if self._long_name is None else self._long_name[2:]
         if command_line_arguments[name] is None:
             return
-        data[self.element_name] = command_line_arguments[name]
+        self._value = command_line_arguments[name]
 
     def validate(self, value):
         """
@@ -355,22 +374,16 @@ class ConfigElement(object):
         if self._validate is not None:
             self._validate(value)
 
-    def validate_data(self, data):
+    def validate_data(self):
         """
         Validate data.
-
-        Parameters
-        ----------
-        data: Dict
-            data structure in which to find and validate our own element
 
         Raises
         ------
         InvalidData:
             if validation fails
         MissingData:
-            if `self.required` is `True` and our value in `data`
-            is `None`
+            if `self.required` is `True` and our value is `None`
 
         Returns
         -------
@@ -382,14 +395,181 @@ class ConfigElement(object):
 
             >>> TODO
         """
-        if self.required and data[self.element_name] is None:
+        if self.required and self._value is None:
             # none of the configuration locations provided a required
             # value, raise an error now
             raise MissingData(
                 'no value was provided for required option {}'.format(
                     self.element_name))
-        if data[self.element_name] is not None:
-            self.validate(data[self.element_name])
+        if self._value is not None:
+            self.validate(self._value)
+
+class StringListOption(ConfigElement):
+
+    """
+    Configuration element with list value.
+
+    Keyword Arguments
+    -----------------
+    doc: str, optional
+        documentation for this option, defaults to None
+    default: Any, optional
+        fallback value, defaults to None
+    required: bool, optional
+        MUST a value be present? If no default is provided, this can
+        result in a MissingData exception. Defaults to True
+    short_name: str, optional
+        short name for use with command line arguments, defaults to None
+    long_name: str, optional
+        overwrite default name for command line arguments, defaults to None
+    validate: Callable[Any, None], optional
+        additional validation function, defaults to None
+    additive: bool, optional
+        whether to add all found lists together instead of overwrite
+        them, defaults to False
+
+    Raises
+    ------
+    InvalidData:
+        if default value does not pass validation
+
+    Attributes
+    ----------
+    creation_counter: int
+        global count of config elements, used to maintain field order
+    element_name: str
+        name of instance, provided by containing class
+    type_: type
+        python type of variable that this class represents
+    subtype: type
+        python type of list items
+    action: str
+        action for argparse
+
+    Examples
+    --------
+    ..doctest::
+
+        >>> TODO
+    """
+
+    type_ = list
+    subtype = str
+    action = 'append'
+
+    def __init__(
+            self,
+            doc=None,
+            default=None,
+            required=True,
+            short_name=None,
+            long_name=None,
+            validate=None,
+            additive=False):
+        ConfigElement.__init__(
+            self,
+            doc=doc,
+            default=default,
+            required=required,
+            short_name=short_name,
+            long_name=long_name,
+            validate=validate)
+        self._additive = additive
+
+    def set_value(self, value):
+        self.validate(value)
+        if self.additive and self._value is not None:
+            raise NotImplementedError
+        else:
+            self._value = value
+
+    def extract_data_from_parser(self, command_line_arguments):
+        name = self.element_name if self._long_name is None else self._long_name[2:]
+        if command_line_arguments[name] is None:
+            return
+        if self._additive:
+            raise NotImplementedError
+        else:
+            self._value = command_line_arguments[name]
+
+    def validate(self, value):
+        if value is None:
+            return
+        if not isinstance(value, self.type_):
+            raise InvalidData('expected a {}, not {}'.format(
+                self.type_, value))
+        for item in value:
+            if not isinstance(item, self.subtype):
+                raise InvalidData('expected a {}, not {}'.format(
+                    self.subtype, item))
+        if self._validate is not None:
+            self._validate(value)
+
+    def append(self):
+        raise NotImplementedError
+
+    def count(self):
+        raise NotImplementedError
+
+    def index(self):
+        raise NotImplementedError
+
+    def extend(self):
+        raise NotImplementedError
+
+    def insert(self):
+        raise NotImplementedError
+
+    def pop(self):
+        raise NotImplementedError
+
+    def remove(self):
+        raise NotImplementedError
+
+    def reverse(self):
+        raise NotImplementedError
+
+    def sort(self):
+        raise NotImplementedError
+
+    def __add__(self):
+        raise NotImplementedError
+
+    def __radd__(self):
+        raise NotImplementedError
+
+    def __iadd__(self):
+        raise NotImplementedError
+
+    def __mul__(self):
+        raise NotImplementedError
+
+    def __rmul__(self):
+        raise NotImplementedError
+
+    def __imul__(self):
+        raise NotImplementedError
+
+    def __contains__(self):
+        raise NotImplementedError
+
+    def __iter__(self):
+        raise NotImplementedError
+
+    def __getitem__(self):
+        raise NotImplementedError
+
+    def __setitem__(self):
+        raise NotImplementedError
+
+    def __delitem__(self):
+        raise NotImplementedError
+
+    def __len__(self):
+        raise NotImplementedError
+
+    def __reversed__(self):
+        raise NotImplementedError
 
 class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
 
@@ -413,6 +593,14 @@ class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
 
     Attributes
     ----------
+    creation_counter: int
+        global count of config elements, used to maintain field order
+    element_name: str
+        name of instance, provided by containing class
+    type_: type
+        python type of variable that this class represents
+    action: str
+        action for argparse
     incomplete_count: int
         Number of content elements which are required, but do not have a
         value. Useful for sections which are not marked as required, but
@@ -426,12 +614,12 @@ class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
     """
 
     incomplete_count = 0
+    type_ = dict
 
     def __init__(
             self,
             required=True,
             validate=None):
-        self._data = collections.OrderedDict()
         ConfigElement.__init__(
             self,
             doc=self.__doc__,
@@ -442,36 +630,38 @@ class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
         """Return True because Section always has a default value."""
         return True
 
-    def get_default(self):
-        """Fetch and store default Section elements."""
-        for element in self._elements:
-            if self._elements[element].has_default():
-                self._data[element] = self._elements[element].get_default()
-            else:
-                self._data[element] = None
-        return self
-
     def get_elements(self):
-        """Return elements and data."""
-        return self._elements, self._data
+        """Return raw element tree, use with caution."""
+        return self._elements
+
+    def get_value(self):
+        """Return current content value."""
+        result = {}
+        for element in self._elements:
+            result[element] = self._elements[element].get_value()
+        return result
+
+    def set_value(self, value):
+        """Validate and store value."""
+        raise NotImplementedError
 
     def construct_parser(self, parser):
         for element in self._elements:
             self._elements[element].construct_parser(parser)
 
-    def extract_data_from_parser(self, command_line_arguments, _):
+    def extract_data_from_parser(self, command_line_arguments):
         for element in self._elements:
             self._elements[element].extract_data_from_parser(
-                command_line_arguments, self._data)
+                command_line_arguments)
 
     def validate(self, value):
         pass
 
-    def validate_data(self, _):
+    def validate_data(self):
         self.incomplete_count = 0
         for element in self._elements:
             try:
-                self._elements[element].validate_data(self._data)
+                self._elements[element].validate_data()
             except MissingData:
                 if not self.required:
                     self.incomplete_count += 1
@@ -562,7 +752,6 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
     application = None
     author = None
     version = None
-    _data = None
 
     def __init__(
             self,
@@ -575,15 +764,8 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
         if self.author is None:
             raise AttributeError(
                 'author not set, please provide an application author')
-        self._data = collections.OrderedDict()
         # validate _elements
         self._validate(self._elements)
-        # populate _data
-        for element in self._elements:
-            if self._elements[element].has_default():
-                self._data[element] = self._elements[element].get_default()
-            else:
-                self._data[element] = None
         # read global config
         if global_path is None or user_path is None:
             paths = AppDirs(self.application, self.author, self.version)
@@ -592,14 +774,14 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
         global_path = global_path.joinpath(
             "{}.{}".format(file_name, self._extension))
         if global_path.is_file():
-            self._read(global_path, self._elements, self._data)
+            self._read(global_path, self._elements)
         # read user config
         if user_path is None:
             user_path = Path(paths.user_config_dir)
         user_path = user_path.joinpath(
             "{}.{}".format(file_name, self._extension))
         if user_path.is_file():
-            self._read(user_path, self._elements, self._data)
+            self._read(user_path, self._elements)
         # construct a commandline parser
         parser = argparse.ArgumentParser(
             prog=self.application,
@@ -621,12 +803,12 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
 
         # check if we should print a configuration file
         if command_line_arguments['generate_config']:
-            self._write(self._elements, self._data, self.__doc__)
+            self._write(self._elements, self.__doc__)
             sys.exit(True)
 
-        # put command line argument data into _data
+        # fetch command line argument data
         for element in self._elements:
             self._elements[element].extract_data_from_parser(
-                command_line_arguments, self._data)
+                command_line_arguments)
             # validate _data
-            self._elements[element].validate_data(self._data)
+            self._elements[element].validate_data()
