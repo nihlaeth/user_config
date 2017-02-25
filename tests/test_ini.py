@@ -50,12 +50,18 @@ def test_validate():
     with pytest.raises(InvalidConfigTree):
         ini_validate(None, OrderedDict(
             nested_section=NestedSection()))
+    unsupported_option = StringOption()
+    unsupported_option.type_ = "nonsense"
+    with pytest.raises(InvalidConfigTree):
+        ini_validate(None, OrderedDict(
+            unsupported_option=unsupported_option))
 
 def test_read():
     config_directory = Path(__file__).parents[0] / 'test_read'
     class SectionOne(Section):
         string = StringOption()
         multiline_string = StringOption()
+        list = StringListOption()
         integer = IntegerOption()
         float = FloatOption()
         boolean = BooleanOption()
@@ -64,6 +70,7 @@ def test_read():
         empty_integer = IntegerOption()
         empty_float = FloatOption()
         empty_boolean = BooleanOption()
+        empty_list = StringListOption()
         missing_key = StringOption()
     config_tree = OrderedDict([
         ('section_one', SectionOne()),
@@ -74,10 +81,14 @@ def test_read():
     assert ' '.join([
         word.strip() for word in config_tree[
             'section_one'].multiline_string.split('\n')]) == "some lines of text"
+    assert config_tree['section_one'].list[0] == "one"
+    assert config_tree['section_one'].list[1] == "two"
+    assert config_tree['section_one'].list[2] == "three"
     assert config_tree['section_one'].integer == 5
     assert config_tree['section_one'].float == 2.3
     assert config_tree['section_one'].boolean is True
     assert config_tree['section_two'].empty_string is None
+    assert config_tree['section_two'].empty_list is None
     assert config_tree['section_two'].empty_integer is None
     assert config_tree['section_two'].empty_float is None
     assert config_tree['section_two'].empty_boolean is None
@@ -99,6 +110,12 @@ def test_read():
     class InvalidBooleanSection(Section):
         not_a_boolean = BooleanOption()
     config_tree = OrderedDict(section_three=InvalidBooleanSection())
+    with pytest.raises(ValueError):
+        ini_read(
+            None, config_directory / 'data_types.cfg', config_tree)
+    class InvalidListSection(Section):
+        not_a_list = StringListOption()
+    config_tree = OrderedDict(section_three=InvalidListSection())
     with pytest.raises(ValueError):
         ini_read(
             None, config_directory / 'data_types.cfg', config_tree)

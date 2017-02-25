@@ -44,6 +44,11 @@ def ini_validate(_, elements):
             if isinstance(sub_elements[sub_element], Section):
                 raise InvalidConfigTree(
                     'nested sections are not supported for ini files')
+            if sub_elements[sub_element].type_ not in (
+                    str, int, float, bool, list):
+                raise InvalidConfigTree(
+                    'unsupported data type {}'.format(
+                        sub_elements[sub_element].type_))
 
 def ini_read(_, path, elements):
     """
@@ -80,11 +85,24 @@ def ini_read(_, path, elements):
             try:
                 if keys[key].type_ == bool:
                     keys[key].set_value(config.getboolean(section, key))
+                elif keys[key].type_ == list:
+                    value = config.get(section, key).split('\n')
+                    if len(value) == 1 and value[0] == '':
+                        continue
+                    result = []
+                    for item in value:
+                        item = item.lstrip()
+                        if not item.startswith("- "):
+                            raise ValueError(
+                                '{} is not a valid ini list'.format(
+                                    config.get(section, key)))
+                        result.append(item[2:])
+                    keys[key].set_value(result)
                 elif keys[key].type_ == str:
                     value = config.get(section, key)
                     if value != '':
                         keys[key].set_value(value)
-                else:
+                elif keys[key].type_ == int or keys[key].type_ == float:
                     keys[key].set_value(
                         keys[key].type_(config.get(section, key)))
             except ValueError:
