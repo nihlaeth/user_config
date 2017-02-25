@@ -9,7 +9,6 @@ python:
 - 3.7-dev
 - nightly
 - pypy
-- pypy3
 before_install:
 - pip install --upgrade setuptools
 - pip install --upgrade pip
