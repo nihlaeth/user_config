@@ -17,7 +17,7 @@ deploy:
     # test pypi
     - provider: pypi
       server: https://testpypi.python.org/pypi
-      user: nihlaeth
+      user: "nihlaeth"
       password:
         secure: "bC0uN1lNuE1NwRCuTiXGbz7T5PpWmkhv0xJ11QGLsPE0YXkCegzovAjpdshJX39IFsZuflMqzJqL/BMUuCmCEh5EcbGfx450Jxzo61Vh/f70IDywd18RXXIO5rnD3kkSLfGD1UQUnQk3v6sS1hFS0uBDYrVgaVg1j/Xxi5/EzwI92cFW2HmRj5HdNHfXz+tPfK6T2u3JYkxtyJ6xh4PuQV4s1i2JajL+TXWAmJpocixy5CJ4PwpudhaXmr5+ovoxXWByc4tPSywLwflqvmf7GCM7Az+Va79dUD5grdbAmALHMB3YOFbSK5scI2QMHYrHDwhzDd9fO6qEpVEF8DclisFxk2mTLD1OwS1GaxNbhaV8hFb/gqm82qPPjlCyoVxVcJL7Ti7mEamHeKKBvytlyiKG0kDj3pSdJ0VEDIr4DyBGOhkCJuDlUK82ugl2e0s1yFolLgnJVIAemoHfWuMMZ59TBWmqCTn5f4pvUM+yPeAf4L2qWSkgez3ux1U3aub4oGOhpNFyGfwCT+W/dPpG1GviCSY7f01E36JAuE2LWLuqwDvilD4EvNfXx6pxc/Rs3LBc9NrUUg8dRMFjXwgFFS+qDyYXvEuVzafba2fL7DEqYuU0kCkVYsK89VeZ3ZACbHexdYFw8C3UKsvnRr2F/lU89h4jmLzQUlwh4hjpZNE="
       on:
@@ -26,7 +26,7 @@ deploy:
       skip_upload_docs: true
     # production pypi
     - provider: pypi
-      user: nihlaeth
+      user: "nihlaeth"
       password:
         secure: "bC0uN1lNuE1NwRCuTiXGbz7T5PpWmkhv0xJ11QGLsPE0YXkCegzovAjpdshJX39IFsZuflMqzJqL/BMUuCmCEh5EcbGfx450Jxzo61Vh/f70IDywd18RXXIO5rnD3kkSLfGD1UQUnQk3v6sS1hFS0uBDYrVgaVg1j/Xxi5/EzwI92cFW2HmRj5HdNHfXz+tPfK6T2u3JYkxtyJ6xh4PuQV4s1i2JajL+TXWAmJpocixy5CJ4PwpudhaXmr5+ovoxXWByc4tPSywLwflqvmf7GCM7Az+Va79dUD5grdbAmALHMB3YOFbSK5scI2QMHYrHDwhzDd9fO6qEpVEF8DclisFxk2mTLD1OwS1GaxNbhaV8hFb/gqm82qPPjlCyoVxVcJL7Ti7mEamHeKKBvytlyiKG0kDj3pSdJ0VEDIr4DyBGOhkCJuDlUK82ugl2e0s1yFolLgnJVIAemoHfWuMMZ59TBWmqCTn5f4pvUM+yPeAf4L2qWSkgez3ux1U3aub4oGOhpNFyGfwCT+W/dPpG1GviCSY7f01E36JAuE2LWLuqwDvilD4EvNfXx6pxc/Rs3LBc9NrUUg8dRMFjXwgFFS+qDyYXvEuVzafba2fL7DEqYuU0kCkVYsK89VeZ3ZACbHexdYFw8C3UKsvnRr2F/lU89h4jmLzQUlwh4hjpZNE="
       on:
