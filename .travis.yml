@@ -17,13 +17,13 @@ script: python -m pytest --cov=user_config --cov-report xml -v
 after_script: python-codacy-coverage -r coverage.xml
 deploy:
 - provider: script
-  script: PYPI_REPOSITORY=testpypi sh scripts/pypi_deploy.sh
+  script: HOME=. PYPI_REPOSITORY=testpypi sh scripts/pypi_deploy.sh
   on:
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
   distributions: sdist bdist_wheel --universal
   skip_cleanup: true
 - provider: script
-  script: PYPI_REPOSITORY=pypi sh scripts/pypi_deploy.sh
+  script: HOME=. PYPI_REPOSITORY=pypi sh scripts/pypi_deploy.sh
   on:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
