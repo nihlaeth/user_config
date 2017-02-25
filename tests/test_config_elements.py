@@ -6,6 +6,10 @@ from user_config import (
     ConfigElement,
     MissingData,
     InvalidData,
+    StringListOption,
+    IntegerListOption,
+    FloatListOption,
+    BooleanListOption,
     Section,
     StringOption,
     IntegerOption,
@@ -235,6 +239,147 @@ class TestBooleanOption(object):
 class EmptySection(Section):
 
     pass
+
+class TestStringListOption(object):
+
+    def test_init(self):
+        list_option = StringListOption()
+        list_option = StringListOption(additive=True)
+        assert list_option._additive is True
+
+    def test_set_value(self):
+        list_option = StringListOption()
+        assert list_option.get_value() is None
+        with pytest.raises(InvalidData):
+            list_option.set_value(5)
+        list_option.set_value([])
+        assert len(list_option.get_value()) == 0
+        list_option.set_value(["test"])
+        assert len(list_option.get_value()) == 1
+        with pytest.raises(InvalidData):
+            list_option.set_value([5])
+
+        list_option = StringListOption(additive=True)
+        list_option.set_value([])
+        assert len(list_option.get_value()) == 0
+        list_option.set_value(["test"])
+        assert len(list_option.get_value()) == 1
+        list_option.set_value(["test"])
+        assert len(list_option.get_value()) == 1
+        list_option.set_value(["something_else"])
+        assert len(list_option.get_value()) == 2
+
+    def test_extract_data_from_parser(self):
+        list_option = StringListOption()
+        list_option.element_name = "list_option"
+        parser = argparse.ArgumentParser(prog="test application")
+        list_option.construct_parser(parser)
+
+        # one argument
+        arguments = vars(parser.parse_args(['--list_option', '5']))
+        list_option.extract_data_from_parser(arguments)
+        list_option.validate_data()
+        assert len(list_option.get_value()) == 1
+
+        # two arguments
+        arguments = vars(parser.parse_args([
+            '--list_option', '5', '--list_option', 'test']))
+        list_option.extract_data_from_parser(arguments)
+        list_option.validate_data()
+        assert len(list_option.get_value()) == 2
+
+        # test list addition
+        list_option = StringListOption(additive=True)
+        list_option.element_name = "list_option"
+
+        # one argument
+        arguments = vars(parser.parse_args(['--list_option', '5']))
+        list_option.extract_data_from_parser(arguments)
+        list_option.validate_data()
+        assert len(list_option.get_value()) == 1
+
+        # one argument
+        arguments = vars(parser.parse_args(['--list_option', '6']))
+        list_option.extract_data_from_parser(arguments)
+        list_option.validate_data()
+        assert len(list_option.get_value()) == 2
+
+        # two arguments
+        arguments = vars(parser.parse_args([
+            '--list_option', '5', '--list_option', 'test']))
+        list_option.extract_data_from_parser(arguments)
+        list_option.validate_data()
+        assert len(list_option.get_value()) == 3
+
+    def test_list_methods(self):
+        list_option = StringListOption(default=[])
+        with pytest.raises(InvalidData):
+            list_option.append(0)
+        list_option.append("0")
+        assert len(list_option.get_value()) == 1
+        assert list_option.count("0") == 1
+        assert list_option.index("0") == 0
+        with pytest.raises(InvalidData):
+            list_option.extend([1])
+        list_option.extend(["1"])
+        assert len(list_option.get_value()) == 2
+        with pytest.raises(InvalidData):
+            list_option.insert(2, 2)
+        list_option.insert(2, "2")
+        assert len(list_option.get_value()) == 3
+        assert list_option.pop() == "2"
+        assert len(list_option.get_value()) == 2
+        list_option.remove("1")
+        assert len(list_option.get_value()) == 1
+        list_option += ["1"]
+        assert len(list_option.get_value()) == 2
+        list_option.reverse()
+        assert list_option[0] == "1"
+        list_option.sort()
+        assert list_option[0] == "0"
+        assert (list_option + ["2"])[2] == "2"
+        assert (["-1"] + list_option)[0] == "-1"
+        assert (list_option * 2)[3] == "1"
+        assert len(2 * list_option) == 4
+        list_option *= 2
+        assert len(list_option.get_value()) == 4
+        assert "1" in list_option
+        assert "2" not in list_option
+        count = 0
+        for _ in list_option:
+            count += 1
+        assert count == 4
+        assert next(reversed(list_option)) == "1"
+        del list_option[0]
+        assert len(list_option.get_value()) == 3
+
+# pylint: disable=unsubscriptable-object
+class TestIntegerListOption(object):
+
+    def test_init(self):
+        list_option = IntegerListOption()
+        with pytest.raises(InvalidData):
+            list_option.set_value(["5"])
+        list_option.set_value([5])
+        assert list_option.get_value()[0] == 5
+
+class TestFloatListOption(object):
+
+    def test_init(self):
+        list_option = FloatListOption()
+        with pytest.raises(InvalidData):
+            list_option.set_value([5])
+        list_option.set_value([5.])
+        assert list_option.get_value()[0] == 5.
+
+class TestBooleanListOption(object):
+
+    def test_init(self):
+        list_option = BooleanListOption()
+        with pytest.raises(InvalidData):
+            list_option.set_value([1])
+        list_option.set_value([True])
+        assert list_option.get_value()[0] is True
 
 class TestSection(object):
 

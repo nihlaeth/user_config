@@ -309,7 +309,7 @@ class ConfigElement(object):
             action=self.action,
             #nargs=1,
             default=None,
-            type=self.type_,
+            type=self.type_ if self.action == 'store' else self.subtype,
             choices=None,
             required=False,
             help=self.doc)
@@ -476,19 +476,25 @@ class StringListOption(ConfigElement):
             validate=validate)
         self._additive = additive
 
+    def _merge_value(self, value):
+        for item in value:
+            if item not in self._value:
+                self._value.append(item)
+
     def set_value(self, value):
         self.validate(value)
-        if self.additive and self._value is not None:
-            raise NotImplementedError
+        if self._additive and self._value is not None and value is not None:
+            self._merge_value(value)
         else:
             self._value = value
 
     def extract_data_from_parser(self, command_line_arguments):
+        print(command_line_arguments)
         name = self.element_name if self._long_name is None else self._long_name[2:]
         if command_line_arguments[name] is None:
             return
-        if self._additive:
-            raise NotImplementedError
+        if self._additive and self._value is not None:
+            self._merge_value(command_line_arguments[name])
         else:
             self._value = command_line_arguments[name]
 
@@ -527,11 +533,8 @@ class StringListOption(ConfigElement):
         self._value.extend(extension)
 
     def insert(self, index, value):
-        """Insert value at index or slice."""
-        if isinstance(index, int):
-            self._validate_item(value)
-        else:
-            self.validate(value)
+        """Insert value at index."""
+        self._validate_item(value)
         self._value.insert(index, value)
 
     def pop(self, index=-1):
@@ -539,27 +542,27 @@ class StringListOption(ConfigElement):
         return self._value.pop(index)
 
     def remove(self, value):
-        """Remove value at index."""
+        """Remove value."""
         self._value.remove(value)
 
     def reverse(self):
         """Reverse list in place."""
         self._value.reverse()
 
-    def sort(self, key=None, reverse=None):
+    def sort(self, key=None, reverse=False):
         """Sort list in place."""
-        self._value.sort(key, reverse)
+        self._value.sort(key=key, reverse=reverse)
 
     def __add__(self, other):
-        self.validate(other)
         return self._value + other
 
     def __radd__(self, other):
-        return self.__add__(other)
+        return other + self._value
 
     def __iadd__(self, other):
         self.validate(other)
         self._value += other
+        return self
 
     def __mul__(self, other):
         return self._value * other
@@ -569,6 +572,7 @@ class StringListOption(ConfigElement):
 
     def __imul__(self, other):
         self._value *= other
+        return self
 
     def __contains__(self, value):
         return value in self._value
