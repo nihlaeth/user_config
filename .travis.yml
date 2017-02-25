@@ -17,28 +17,21 @@ install: pip install ".[deploy]"
 script: python -m pytest --cov=user_config --cov-report xml -v
 after_script: python-codacy-coverage -r coverage.xml
 deploy:
-    # test pypi
-    - provider: pypi
-      server: https://testpypi.python.org/pypi
-      user: "nihlaeth"
-      password:
-        secure: "bC0uN1lNuE1NwRCuTiXGbz7T5PpWmkhv0xJ11QGLsPE0YXkCegzovAjpdshJX39IFsZuflMqzJqL/BMUuCmCEh5EcbGfx450Jxzo61Vh/f70IDywd18RXXIO5rnD3kkSLfGD1UQUnQk3v6sS1hFS0uBDYrVgaVg1j/Xxi5/EzwI92cFW2HmRj5HdNHfXz+tPfK6T2u3JYkxtyJ6xh4PuQV4s1i2JajL+TXWAmJpocixy5CJ4PwpudhaXmr5+ovoxXWByc4tPSywLwflqvmf7GCM7Az+Va79dUD5grdbAmALHMB3YOFbSK5scI2QMHYrHDwhzDd9fO6qEpVEF8DclisFxk2mTLD1OwS1GaxNbhaV8hFb/gqm82qPPjlCyoVxVcJL7Ti7mEamHeKKBvytlyiKG0kDj3pSdJ0VEDIr4DyBGOhkCJuDlUK82ugl2e0s1yFolLgnJVIAemoHfWuMMZ59TBWmqCTn5f4pvUM+yPeAf4L2qWSkgez3ux1U3aub4oGOhpNFyGfwCT+W/dPpG1GviCSY7f01E36JAuE2LWLuqwDvilD4EvNfXx6pxc/Rs3LBc9NrUUg8dRMFjXwgFFS+qDyYXvEuVzafba2fL7DEqYuU0kCkVYsK89VeZ3ZACbHexdYFw8C3UKsvnRr2F/lU89h4jmLzQUlwh4hjpZNE="
-      on:
-        condition: $TRAVIS_PYTHON_VERSION = "3.6"
-      distributions: sdist bdist_wheel --universal
-      skip_upload_docs: true
-      skip_cleanup: true
-    # production pypi
-    - provider: pypi
-      user: "nihlaeth"
-      password:
-        secure: "bC0uN1lNuE1NwRCuTiXGbz7T5PpWmkhv0xJ11QGLsPE0YXkCegzovAjpdshJX39IFsZuflMqzJqL/BMUuCmCEh5EcbGfx450Jxzo61Vh/f70IDywd18RXXIO5rnD3kkSLfGD1UQUnQk3v6sS1hFS0uBDYrVgaVg1j/Xxi5/EzwI92cFW2HmRj5HdNHfXz+tPfK6T2u3JYkxtyJ6xh4PuQV4s1i2JajL+TXWAmJpocixy5CJ4PwpudhaXmr5+ovoxXWByc4tPSywLwflqvmf7GCM7Az+Va79dUD5grdbAmALHMB3YOFbSK5scI2QMHYrHDwhzDd9fO6qEpVEF8DclisFxk2mTLD1OwS1GaxNbhaV8hFb/gqm82qPPjlCyoVxVcJL7Ti7mEamHeKKBvytlyiKG0kDj3pSdJ0VEDIr4DyBGOhkCJuDlUK82ugl2e0s1yFolLgnJVIAemoHfWuMMZ59TBWmqCTn5f4pvUM+yPeAf4L2qWSkgez3ux1U3aub4oGOhpNFyGfwCT+W/dPpG1GviCSY7f01E36JAuE2LWLuqwDvilD4EvNfXx6pxc/Rs3LBc9NrUUg8dRMFjXwgFFS+qDyYXvEuVzafba2fL7DEqYuU0kCkVYsK89VeZ3ZACbHexdYFw8C3UKsvnRr2F/lU89h4jmLzQUlwh4hjpZNE="
-      on:
-        tags: true
-        condition: $TRAVIS_PYTHON_VERSION = "3.6"
-      distributions: sdist bdist_wheel --universal
-      skip_upload_docs: true
-      skip_cleanup: true
+- provider: script
+  script: PYPI_REPOSITORY=testpypi sh scripts/pypi_deploy.sh
+  on:
+    condition: $TRAVIS_PYTHON_VERSION = "3.6"
+  distributions: sdist bdist_wheel --universal
+  skip_cleanup: true
+- provider: script
+  script: PYPI_REPOSITORY=pypi sh scripts/pypi_deploy.sh
+  on:
+    tags: true
+    condition: $TRAVIS_PYTHON_VERSION = "3.6"
+  distributions: sdist bdist_wheel --universal
+  skip_cleanup: true
 env:
   matrix:
     secure: mDTKEa4wzfc61mi16W660zf0zPqO2ydlFTZ3wFrWkB7dyV2zV9N/m/1nULKmbjHF5s9wy6urfOZXfb0XdMF0ZsYZbWHflq3lEDUYvPA6OaxM189q9fwQCkgmxtlIWSpjKM2v267gPYsbv8YZx0MvAXGbpx6xioVY7iILxl+/rsuPVyAnNJymVUhcJBY1wqoVmOFp+7hIvAn4FTCvINydcVfF/z4qu6q7Sc5LcKr39VuGZkXeUQiPzPL0HXEJMkG7MSP2LBn7PsTbgcVckWveOtatfWGq6X4K4iF9KY5bSArjw9a+LgdFZXm+dAroJ42kSaHApm5jHepUhZuBYuL4sSUGp8SLTDiRMtZ2/oL1t95+t017KZBwQciFV5L+5PKGuh3mwuz8QrqJAy6/AULMnU7dWUvBzqZg090mAaXLy9PKE2Mx9aES7iAPf1yAiDbnOQRFU0R2f3unfHYd6bc54rCNO3FWfNAjjADLuOL1EN/AvrSsmtigNFqPiC9B+Z4FkPJsEQpRN7lYv2K2W2MVXgb8nHlAGVoUeo8oFtmGPbZ4hcN6+gHe27ElRc6mTUQuPQHpMGXhou4ypZMinvnv6DsBXA6zGUwycaxiJpOSyPPXT9R8cHx34idjLmJsbbWOj02tg/BnABAMNu5p6dnaiih63JPD24ZharKd9wR5dds=
+  global:
+    secure: lQYqfU6rlapp7zt3VQg5HXW/kpAlRKBfsnYu3KYswjzuqk/Po/0ct7LczysQYd6scKTH/vveL4zHxfbZ04x+1YGqTDxm+vpgOCaPHUdppX6lZD4XPvudWKkj2i/ORXdGEq+vfUwe3zBXUV5mRlIx9kpLDDSUAVft6JhuhKbWrCXM9tY4L125MnyPbhW8RYOyRNMqTZ2JDfsAx0ryM1ePQSyPiBDbQbe/Mzbx+br1NBTurSRVibfITk1gZ8oyg8l4IrO3E1StR5WxoB2XE0X/IqkKepPluVEGyXgLe53rJMH7LR++yzpU3a15f/Ge1djFAzr6g6M1XS/38gkaVXn1QiwDqJDpAlwd6E+l5hnBbWnkBBixXAmuWIay1qUEa4Epfbd/ttBjOceuXc6okbgFVv0TYdu2REN63dS8EQhfVqTSJAmlpdG0IY5wFRosCBK6pPECfr7dYaqcvNVyHoO6LOjsjSV/EoQ+ZLUSHcXPKQjS7osWaugpRnDn7FCOkKrAHZaWIfPvWm7IA7M3Re08Utz7RCWNRZoNjUw5jSX/kn3o4DJVsxl9UPPzX0TB56kSyUf2+jQ8ZG4FkwOmZEXK4Ch22I4sxhvX66lD/FEhLaVEmaZyaTyMX9Vw8mvdolVFPOF0zHlh0yI5747G1LHhPE/JLccwdZtO8rCLrTXBe5o=
