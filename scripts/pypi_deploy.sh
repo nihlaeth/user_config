@@ -8,14 +8,14 @@ index-servers=
     pypi
     testpypi
 
-[testpypi]
-repository = https://testpypi.python.org/pypi
+[server-login]
 username = nihlaeth
 password = ${PYPI_PASSWORD}
 
+[testpypi]
+repository = https://testpypi.python.org/pypi
+
 [pypi]
 repository = https://upload.pypi.org/legacy/
-username = nihlaeth
-password = ${PYPI_PASSWORD}
 EOF
 twine upload --config-file ./.pypirc -r ${PYPI_REPOSITORY} dist/*
