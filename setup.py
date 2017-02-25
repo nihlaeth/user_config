@@ -38,7 +38,7 @@ with open('README.rst', 'r') as readme:
 
 setup(
     name='user_config',
-    version='1.0a5',
+    version='1.0a6',
     description='manage user configuration for python packages',
     long_description=LONG_DESCRIPTION,
     author='nihlaeth',
