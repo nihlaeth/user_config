@@ -127,7 +127,7 @@ def _print_item(key, item, value):
     if item.has_default():
         # handle multiline strings
         if item.type_ == list:
-            lines = ['- {}'.format(item) for item in item.get_default()]
+            lines = ['- {}'.format(thing) for thing in item.get_default()]
         else:
             lines = str(item.get_default()).split('\n')
         print("# {} = {}".format(key, lines[0]))
@@ -145,7 +145,7 @@ def _print_item(key, item, value):
     elif value is not None and value != item.get_default():
         # handle multiline strings
         if item.type_ == list:
-            lines = ['- {}'.format(item) for item in value]
+            lines = ['- {}'.format(thing) for thing in value]
         else:
             lines = str(value).split('\n')
         print("{} = {}".format(key, lines[0]))
