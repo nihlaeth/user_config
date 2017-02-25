@@ -18,7 +18,7 @@ def validate_length(value):
     if len(value) > 3:
         raise InvalidData('we cant handle more than three characters')
 
-# pylint:disable=no-self-use
+# pylint:disable=no-self-use,protected-access
 class TestConfigElement(object):
 
     def test_init(self):
@@ -53,6 +53,21 @@ class TestConfigElement(object):
         assert config_element.has_default()
         assert config_element.get_default() == "test"
 
+    def test_value(self):
+        no_default = ConfigElement()
+        assert no_default.get_value() is None
+        no_default.set_value("valid")
+        assert no_default.get_value() == "valid"
+        with pytest.raises(InvalidData):
+            no_default.set_value(-5)
+
+        with_default = ConfigElement(default="default")
+        assert with_default.get_value() == "default"
+        with_default.set_value("valid")
+        assert with_default.get_value() == "valid"
+        with pytest.raises(InvalidData):
+            with_default.set_value(-5)
+
     def test_parser(self, capsys):
         # test normal usage
         config_element = ConfigElement()
@@ -61,9 +76,8 @@ class TestConfigElement(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args(['--test', 'success']))
         assert arguments['test'] == 'success'
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert data['test'] == 'success'
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() == 'success'
 
         # test absent option
         config_element = ConfigElement()
@@ -72,9 +86,8 @@ class TestConfigElement(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args([]))
         assert arguments['test'] is None
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert 'test' not in data
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() is None
 
         # test alternate name
         config_element = ConfigElement(long_name="--testing")
@@ -83,9 +96,8 @@ class TestConfigElement(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args(['--test', 'success']))
         assert arguments['testing'] == 'success'
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert data['test'] == 'success'
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() == 'success'
 
         # test help text
         config_element = ConfigElement(doc="helpful text")
@@ -124,22 +136,26 @@ optional arguments:
         config_element.element_name = 'test'
         with pytest.raises(InvalidData):
             config_element.validate(5)
+        config_element._value = 5
         with pytest.raises(InvalidData):
-            config_element.validate_data({'test': 5})
+            config_element.validate_data()
         config_element.validate("ok")
 
         config_element = ConfigElement(validate=validate_length)
         config_element.element_name = 'test'
         with pytest.raises(InvalidData):
             config_element.validate("some words")
+        config_element._value = "some words"
         with pytest.raises(InvalidData):
-            config_element.validate_data({'test': "some words"})
+            config_element.validate_data()
         with pytest.raises(InvalidData):
             config_element.validate(5)
+        config_element._value = 5
         with pytest.raises(InvalidData):
-            config_element.validate_data({'test': 5})
+            config_element.validate_data()
         config_element.validate("ok")
-        config_element.validate_data({'test': "ok"})
+        config_element.set_value("ok")
+        config_element.validate_data()
 
 class TestStringOption(object):
 
@@ -162,9 +178,8 @@ class TestIntegerOption(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args(['--number', '5']))
         assert arguments['number'] == 5
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert data['number'] == 5
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() == 5
 
         parser.print_help()
         out, err = capsys.readouterr()
@@ -193,9 +208,8 @@ class TestFloatOption(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args(['--number', '5.3']))
         assert arguments['number'] == 5.3
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert data['number'] == 5.3
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() == 5.3
 
 class TestBooleanOption(object):
 
@@ -214,9 +228,8 @@ class TestBooleanOption(object):
         config_element.construct_parser(parser)
         arguments = vars(parser.parse_args(['--all_good', 'yes']))
         assert arguments['all_good'] is True
-        data = {}
-        config_element.extract_data_from_parser(arguments, data)
-        assert data['all_good'] is True
+        config_element.extract_data_from_parser(arguments)
+        assert config_element.get_value() is True
 
 # pylint: disable=missing-docstring,function-redefined,attribute-defined-outside-init
 class EmptySection(Section):
@@ -228,13 +241,12 @@ class TestSection(object):
     def test_init(self):
         empty_section = EmptySection()
         assert empty_section.has_default()
-        assert empty_section.get_default() is empty_section
+        assert empty_section.get_default() is None
         assert len(empty_section) == 0
 
         class MySection(Section):
             name = StringOption(default="test")
         section = MySection()
-        section.get_default()
 
         # test map methods
         assert len(section) == 1
@@ -263,52 +275,58 @@ class TestSection(object):
             one = IntegerOption()
             two = IntegerOption(required=False)
         optional_section = MySection(required=False)
-        optional_section.get_default()
         optional_section.element_name = "section"
         parser = argparse.ArgumentParser(prog="test application")
         optional_section.construct_parser(parser)
 
         # missing required value
         arguments = vars(parser.parse_args([]))
-        optional_section.extract_data_from_parser(arguments, None)
-        optional_section.validate_data(None)
+        optional_section.extract_data_from_parser(arguments)
+        optional_section.validate_data()
         assert optional_section.incomplete_count == 1
 
         # missing required value, optional value provided
+        optional_section = MySection(required=False)
+        optional_section.element_name = "section"
         arguments = vars(parser.parse_args(['--two', '42']))
-        optional_section.extract_data_from_parser(arguments, None)
-        optional_section.validate_data(None)
+        optional_section.extract_data_from_parser(arguments)
+        optional_section.validate_data()
         assert optional_section.incomplete_count == 1
 
         # required value provided
+        optional_section = MySection(required=False)
+        optional_section.element_name = "section"
         arguments = vars(parser.parse_args(['--one', '5']))
-        optional_section.extract_data_from_parser(arguments, None)
-        optional_section.validate_data(None)
+        optional_section.extract_data_from_parser(arguments)
+        optional_section.validate_data()
         assert optional_section.incomplete_count == 0
 
         # test required section
         required_section = MySection(required=True)
-        required_section.get_default()
         required_section.element_name = "section"
         parser = argparse.ArgumentParser(prog="test application")
         required_section.construct_parser(parser)
 
         # missing required value
         arguments = vars(parser.parse_args([]))
-        required_section.extract_data_from_parser(arguments, None)
+        required_section.extract_data_from_parser(arguments)
         with pytest.raises(MissingData):
-            required_section.validate_data(None)
+            required_section.validate_data()
         assert required_section.incomplete_count == 0
 
         # missing required value, optional value provided
+        required_section = MySection(required=True)
+        required_section.element_name = "section"
         arguments = vars(parser.parse_args(['--two', '42']))
-        required_section.extract_data_from_parser(arguments, None)
+        required_section.extract_data_from_parser(arguments)
         with pytest.raises(MissingData):
-            required_section.validate_data(None)
+            required_section.validate_data()
         assert required_section.incomplete_count == 0
 
         # required value provided
+        required_section = MySection(required=True)
+        required_section.element_name = "section"
         arguments = vars(parser.parse_args(['--one', '5']))
-        required_section.extract_data_from_parser(arguments, None)
-        required_section.validate_data(None)
+        required_section.extract_data_from_parser(arguments)
+        required_section.validate_data()
         assert required_section.incomplete_count == 0

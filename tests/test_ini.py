@@ -68,22 +68,19 @@ def test_read():
         ('section_one', SectionOne()),
         ('section_two', SectionTwo()),
         ('missing_section', EmptySection())])
-    data = OrderedDict()
-    for section in config_tree:
-        data[section] = config_tree[section].get_default()
-    ini_read(None, config_directory / 'data_types.cfg', config_tree, None)
-    assert data['section_one'].string == "some text"
+    ini_read(None, config_directory / 'data_types.cfg', config_tree)
+    assert config_tree['section_one'].string == "some text"
     assert ' '.join([
-        word.strip() for word in data[
+        word.strip() for word in config_tree[
             'section_one'].multiline_string.split('\n')]) == "some lines of text"
-    assert data['section_one'].integer == 5
-    assert data['section_one'].float == 2.3
-    assert data['section_one'].boolean is True
-    assert data['section_two'].empty_string is None
-    assert data['section_two'].empty_integer is None
-    assert data['section_two'].empty_float is None
-    assert data['section_two'].empty_boolean is None
-    assert data['section_two'].missing_key is None
+    assert config_tree['section_one'].integer == 5
+    assert config_tree['section_one'].float == 2.3
+    assert config_tree['section_one'].boolean is True
+    assert config_tree['section_two'].empty_string is None
+    assert config_tree['section_two'].empty_integer is None
+    assert config_tree['section_two'].empty_float is None
+    assert config_tree['section_two'].empty_boolean is None
+    assert config_tree['section_two'].missing_key is None
 
     # test invalid values
     class InvalidIntegerSection(Section):
@@ -91,19 +88,19 @@ def test_read():
     config_tree = OrderedDict(section_three=InvalidIntegerSection())
     with pytest.raises(ValueError):
         ini_read(
-            None, config_directory / 'data_types.cfg', config_tree, None)
+            None, config_directory / 'data_types.cfg', config_tree)
     class InvalidFloatSection(Section):
         not_a_float = FloatOption()
     config_tree = OrderedDict(section_three=InvalidFloatSection())
     with pytest.raises(ValueError):
         ini_read(
-            None, config_directory / 'data_types.cfg', config_tree, None)
+            None, config_directory / 'data_types.cfg', config_tree)
     class InvalidBooleanSection(Section):
         not_a_boolean = BooleanOption()
     config_tree = OrderedDict(section_three=InvalidBooleanSection())
     with pytest.raises(ValueError):
         ini_read(
-            None, config_directory / 'data_types.cfg', config_tree, None)
+            None, config_directory / 'data_types.cfg', config_tree)
 
 def test_register_extension():
     result = register_extension()
@@ -121,25 +118,25 @@ class TestWrite(object):
         doc = "test"
 
         # empty
-        ini_write(None, empty_elements, None, None)
+        ini_write(None, empty_elements, None)
         out, err = capsys.readouterr()
         assert out == ""
         assert err == ""
 
         # only docstring
-        ini_write(None, empty_elements, None, doc)
+        ini_write(None, empty_elements, doc)
         out, err = capsys.readouterr()
         assert out == "## test\n\n"
         assert err == ""
 
         # only section
-        ini_write(None, one_section, None, None)
+        ini_write(None, one_section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n\n"
         assert err == ""
 
         # docstring and section
-        ini_write(None, one_section, None, doc)
+        ini_write(None, one_section, doc)
         out, err = capsys.readouterr()
         assert out == "## test\n\n[section]\n\n"
         assert err == ""
@@ -147,7 +144,7 @@ class TestWrite(object):
     def test_section(self, capsys):
         # empty section
         empty_section = OrderedDict(section=EmptySection())
-        ini_write(None, empty_section, None, None)
+        ini_write(None, empty_section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n\n"
         assert err == ""
@@ -156,7 +153,7 @@ class TestWrite(object):
         class DocumentedSection(Section):
             """test"""
         section = OrderedDict(section=DocumentedSection())
-        ini_write(None, section, None, None)
+        ini_write(None, section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n## test\n\n\n"
         assert err == ""
@@ -164,7 +161,7 @@ class TestWrite(object):
         # optional section
         optional_section = OrderedDict(
             section=EmptySection(required=False))
-        ini_write(None, optional_section, None, None)
+        ini_write(None, optional_section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n## OPTIONAL_SECTION\n\n\n"
         assert err == ""
@@ -172,7 +169,7 @@ class TestWrite(object):
         # optional section with docstring
         section = OrderedDict(
             section=DocumentedSection(required=False))
-        ini_write(None, section, None, None)
+        ini_write(None, section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n## test\n## OPTIONAL_SECTION\n\n\n"
         assert err == ""
@@ -182,7 +179,7 @@ class TestWrite(object):
         section['first_section'] = EmptySection()
         section['section'] = DocumentedSection()
         section['last_section'] = EmptySection()
-        ini_write(None, section, None, None)
+        ini_write(None, section, None)
         out, err = capsys.readouterr()
         assert out == "[first_section]\n\n[section]\n## test\n\n\n[last_section]\n\n"
         assert err == ""
@@ -193,7 +190,7 @@ class TestWrite(object):
         optional_section = OrderedDict(section=SectionWithContent(
             required=False))
         optional_section['section'].get_default()
-        ini_write(None, optional_section, None, None)
+        ini_write(None, optional_section, None)
         out, err = capsys.readouterr()
         assert out == "[section]\n## OPTIONAL_SECTION\n\n# string = value\n\n\n"
         assert err == ""
@@ -203,8 +200,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="value", required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -218,8 +214,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="value", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -233,8 +228,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -250,8 +244,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -266,9 +259,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="value", required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -283,9 +275,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="value", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -300,9 +291,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -318,9 +308,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -337,8 +326,7 @@ class TestWrite(object):
             string = StringOption(
                 doc="test", default="value", required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -354,8 +342,7 @@ class TestWrite(object):
             string = StringOption(
                 doc="test", default="value", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -370,8 +357,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(doc="test", required=True)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -388,8 +374,7 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(doc="test", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -405,9 +390,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="value", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -422,9 +406,8 @@ class TestWrite(object):
         class MySection(Section):
             string = StringOption(default="a\nb\nc", required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "d\ne\nf"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -443,9 +426,8 @@ class TestWrite(object):
         class MySection(Section):
             integer = IntegerOption(default=7, required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].integer = 8
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -460,9 +442,8 @@ class TestWrite(object):
         class MySection(Section):
             float = FloatOption(default=2., required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].float = 3.5
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -477,9 +458,8 @@ class TestWrite(object):
         class MySection(Section):
             boolean = BooleanOption(default=True, required=False)
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].boolean = False
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
@@ -495,9 +475,8 @@ class TestWrite(object):
             string = StringOption(default="value", required=False)
             item_two = StringOption(doc="option two", default="2")
         elements = OrderedDict(section=MySection())
-        elements['section'].get_default()
         elements['section'].string = "overwritten"
-        ini_write(None, elements, None, None)
+        ini_write(None, elements, None)
         out, err = capsys.readouterr()
         assert out == '\n'.join([
             "[section]",
