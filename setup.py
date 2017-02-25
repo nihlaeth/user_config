@@ -57,7 +57,7 @@ setup(
             'coverage',
             'pytest-cov',
             'codacy-coverage',
-            'twine',
+            'twine>=1.8.1',
             'wheel'],
         'doctest': ['sphinx>=1.3.1'],
         'doc': [
