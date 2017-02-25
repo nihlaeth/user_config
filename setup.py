@@ -38,7 +38,6 @@ with open('README.rst', 'r') as readme:
 
 setup(
     name='user_config',
-    version='1.0a6',
     description='manage user configuration for python packages',
     long_description=LONG_DESCRIPTION,
     author='nihlaeth',
@@ -47,7 +46,8 @@ setup(
     license='GPLv3',
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     packages=find_packages(),
-    setup_requires=['pytest-runner'],
+    setup_requires=['pytest-runner', 'vcversioner'],
+    vcversioner={'version_file': 'VERSION'},
     tests_require=['pytest'],
     install_requires=['appdirs>=1.4'],
     extras_require={
