@@ -108,7 +108,10 @@ def _print_item(key, item, value):
     # print default
     if item.has_default():
         # handle multiline strings
-        lines = str(item.get_default()).split('\n')
+        if item.type_ == list:
+            lines = ['- {}'.format(item) for item in item.get_default()]
+        else:
+            lines = str(item.get_default()).split('\n')
         print("# {} = {}".format(key, lines[0]))
         if len(lines) > 1:
             for line in lines[1:]:
@@ -123,7 +126,10 @@ def _print_item(key, item, value):
         print("{} = ".format(key))
     elif value is not None and value != item.get_default():
         # handle multiline strings
-        lines = str(value).split('\n')
+        if item.type_ == list:
+            lines = ['- {}'.format(item) for item in value]
+        else:
+            lines = str(value).split('\n')
         print("{} = {}".format(key, lines[0]))
         if len(lines) > 1:
             for line in lines[1:]:

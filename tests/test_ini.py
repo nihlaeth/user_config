@@ -5,6 +5,7 @@ import pytest
 
 from user_config import (
     Section,
+    StringListOption,
     StringOption,
     BooleanOption,
     IntegerOption,
@@ -417,6 +418,27 @@ class TestWrite(object):
             "string = d",
             "    e",
             "    f",
+            "",
+            "",
+            ""])
+        assert err == ""
+
+        # string list, with default
+        class MySection(Section):
+            string_list = StringListOption(
+                default=["a", "b", "c"], required=False)
+        elements = OrderedDict(section=MySection())
+        elements['section'].string_list = ["d", "e", "f"]
+        ini_write(None, elements, None)
+        out, err = capsys.readouterr()
+        assert out == '\n'.join([
+            "[section]",
+            "# string_list = - a",
+            "#     - b",
+            "#     - c",
+            "string_list = - d",
+            "    - e",
+            "    - f",
             "",
             "",
             ""])
