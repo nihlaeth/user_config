@@ -286,26 +286,25 @@ class TestSection(object):
         assert optional_section.incomplete_count == 1
 
         # missing required value, optional value provided
-        optional_section = MySection(required=False)
-        optional_section.element_name = "section"
         arguments = vars(parser.parse_args(['--two', '42']))
         optional_section.extract_data_from_parser(arguments)
         optional_section.validate_data()
         assert optional_section.incomplete_count == 1
 
         # required value provided
-        optional_section = MySection(required=False)
-        optional_section.element_name = "section"
         arguments = vars(parser.parse_args(['--one', '5']))
         optional_section.extract_data_from_parser(arguments)
         optional_section.validate_data()
         assert optional_section.incomplete_count == 0
 
         # test required section
+        # refresh element instances, since their values are shared across
+        # section instances
+        class MySection(Section):
+            one = IntegerOption()
+            two = IntegerOption(required=False)
         required_section = MySection(required=True)
         required_section.element_name = "section"
-        parser = argparse.ArgumentParser(prog="test application")
-        required_section.construct_parser(parser)
 
         # missing required value
         arguments = vars(parser.parse_args([]))
@@ -315,8 +314,6 @@ class TestSection(object):
         assert required_section.incomplete_count == 0
 
         # missing required value, optional value provided
-        required_section = MySection(required=True)
-        required_section.element_name = "section"
         arguments = vars(parser.parse_args(['--two', '42']))
         required_section.extract_data_from_parser(arguments)
         with pytest.raises(MissingData):
@@ -324,8 +321,6 @@ class TestSection(object):
         assert required_section.incomplete_count == 0
 
         # required value provided
-        required_section = MySection(required=True)
-        required_section.element_name = "section"
         arguments = vars(parser.parse_args(['--one', '5']))
         required_section.extract_data_from_parser(arguments)
         required_section.validate_data()

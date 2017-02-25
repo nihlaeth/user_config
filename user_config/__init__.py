@@ -705,6 +705,7 @@ class Section(with_metaclass(ConfigMeta, ConfigElement, MappingMixin)):
             try:
                 self._elements[element].validate_data()
             except MissingData:
+                print(self.required)
                 if not self.required:
                     self.incomplete_count += 1
                 else:
