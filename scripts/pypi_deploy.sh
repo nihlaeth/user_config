@@ -3,6 +3,11 @@ set -e
 set +x # double-check that x is unset
 python setup.py sdist bdist_wheel --universal
 cat > ~/.pypirc << _EOF_
+[distutils]
+index-servers=
+    pypi
+    testpypi
+
 [testpypi]
 repository = https://testpypi.python.org/pypi
 username = ${TWINE_USERNAME}
