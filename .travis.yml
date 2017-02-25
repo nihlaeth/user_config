@@ -20,14 +20,12 @@ deploy:
   script: HOME=. PYPI_REPOSITORY=testpypi sh scripts/pypi_deploy.sh
   on:
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
-  distributions: sdist bdist_wheel --universal
   skip_cleanup: true
 - provider: script
   script: HOME=. PYPI_REPOSITORY=pypi sh scripts/pypi_deploy.sh
   on:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
-  distributions: sdist bdist_wheel --universal
   skip_cleanup: true
 env:
   matrix:
