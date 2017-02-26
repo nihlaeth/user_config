@@ -340,6 +340,7 @@ class ConfigElement(object):
         name = self.element_name if self._long_name is None else self._long_name[2:]
         if command_line_arguments[name] is None:
             return
+        self.validate(command_line_arguments[name])
         self._value = command_line_arguments[name]
 
     def validate(self, value):
@@ -493,6 +494,7 @@ class StringListOption(ConfigElement):
         name = self.element_name if self._long_name is None else self._long_name[2:]
         if command_line_arguments[name] is None:
             return
+        self.validate(command_line_arguments[name])
         if self._additive and self._value is not None:
             self._merge_value(command_line_arguments[name])
         else:
