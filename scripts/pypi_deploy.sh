@@ -1,4 +1,3 @@
-#!/bin/bash
 echo 1
 set -e
 set +x # double-check that x is unset
