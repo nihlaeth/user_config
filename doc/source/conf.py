@@ -64,7 +64,8 @@ author = u'nihlaeth'
 # built documents.
 #
 version = release = vcversioner.find_version(
-    root=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).version
+    root=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    version_file='VERSION').version
 # The short X.Y version.
 #version = u'1.0'
 # The full version, including alpha/beta/rc tags.
