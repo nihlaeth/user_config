@@ -16,12 +16,12 @@ script: python -m pytest --cov=user_config --cov-report xml -v
 after_script: python-codacy-coverage -r coverage.xml
 deploy:
 - provider: script
-  script: HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=testpypi scripts/pypi_deploy.sh
+  script: HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=testpypi ./scripts/pypi_deploy.sh
   on:
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
   skip_cleanup: true
 - provider: script
-  script: HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=pypi scripts/pypi_deploy.sh
+  script: HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=pypi ./scripts/pypi_deploy.sh
   on:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION = "3.6"
