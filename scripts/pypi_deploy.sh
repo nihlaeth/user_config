@@ -19,3 +19,7 @@ username = ${TWINE_USERNAME}
 password = ${TWINE_PASSWORD}
 _EOF_
 twine upload -r ${TWINE_REPOSITORY} dist/*
+
+# reset ownership so that we can stop using sudo
+sudo chown --changes --recursive $(whoami):$(id --group $(whoami)) .
+sudo chown --changes $(whoami):$(id --group $(whoami)) ~/.pypirc
