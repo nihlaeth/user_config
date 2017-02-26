@@ -14,6 +14,10 @@ before_install:
 install: pip install ".[deploy]"
 script: python -m pytest --cov=user_config --cov-report xml -v
 after_script: python-codacy-coverage -r coverage.xml
+after_success:
+- echo $PATH
+- which bash
+- which python
 deploy:
 - provider: script
   script: HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=testpypi sh ./scripts/pypi_deploy.sh
