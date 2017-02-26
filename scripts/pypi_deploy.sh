@@ -22,7 +22,9 @@ username = ${TWINE_USERNAME}
 password = ${TWINE_PASSWORD}
 _EOF_
 echo "check #4"
-$(which twine) upload -r ${TWINE_REPOSITORY} dist/*
+if [ "${TRAVIS_PYTHON_VERSION}" = "3.6" ]; then
+    $(which twine) upload -r ${TWINE_REPOSITORY} dist/*
+fi
 
 # reset ownership so that we can stop using sudo
 # sudo chown --changes --recursive $(whoami):$(id --group $(whoami)) .
