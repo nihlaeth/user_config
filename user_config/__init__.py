@@ -851,7 +851,7 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
         # check if we should print a configuration file
         if command_line_arguments['generate_config']:
             self._write(self._elements, self.__doc__)
-            sys.exit(True)
+            sys.exit(False)
 
         # fetch command line argument data
         for element in self._elements:
