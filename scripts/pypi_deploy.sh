@@ -1,6 +1,6 @@
 #!/bin/bash
 echo 1
-set -e
+set -ev
 set +x # double-check that x is unset
 echo 2
 $(which python) setup.py sdist bdist_wheel --universal
