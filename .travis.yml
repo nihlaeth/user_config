@@ -15,9 +15,6 @@ install: pip install ".[deploy]"
 script: python -m pytest --cov=user_config --cov-report xml -v
 after_script: python-codacy-coverage -r coverage.xml
 after_success:
-- echo $PATH
-- which bash
-- which python
 - test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_BRANCH}" == "master" && test "${TRAVIS_PYTHON_VERSION}" == "3.6" && sh ./scripts/pypi_deploy.sh
 env:
   global:
