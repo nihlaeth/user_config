@@ -1,10 +1,10 @@
 #!/bin/bash
-echo 1
 set -ev
+echo "check #1"
 set +x # double-check that x is unset
-echo 2
+echo "check #2"
 $(which python) setup.py sdist bdist_wheel --universal
-echo 3
+echo "check #3"
 cat > ~/.pypirc << _EOF_
 [distutils]
 index-servers=
@@ -21,7 +21,7 @@ repository = https://upload.pypi.org/legacy/
 username = ${TWINE_USERNAME}
 password = ${TWINE_PASSWORD}
 _EOF_
-echo 4
+echo "check #4"
 $(which twine) upload -r ${TWINE_REPOSITORY} dist/*
 
 # reset ownership so that we can stop using sudo
