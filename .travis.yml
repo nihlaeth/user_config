@@ -18,7 +18,7 @@ after_success:
 - echo $PATH
 - which bash
 - which python
-- test "${TRAVIS_PULL_REQUEST}" == "false" && sh ./scripts/pypi_deploy.sh
+- test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_BRANCH}" == "master" && test "${TRAVIS_PYTHON_VERSION}" == "3.6" && sh ./scripts/pypi_deploy.sh
 env:
   global:
   - TWINE_USERNAME=nihlaeth
