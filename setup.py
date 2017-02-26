@@ -47,7 +47,7 @@ setup(
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     packages=find_packages(),
     setup_requires=['pytest-runner', 'vcversioner'],
-    vcversioner={'version_file': 'VERSION'},
+    vcversioner={'version_file': 'VERSION', 'decrement_dev_version': False},
     tests_require=['pytest'],
     install_requires=['appdirs>=1.4'],
     extras_require={
