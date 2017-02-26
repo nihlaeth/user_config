@@ -18,19 +18,7 @@ after_success:
 - echo $PATH
 - which bash
 - which python
-- HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=testpypi sh ./scripts/pypi_deploy.sh
-deploy:
-- provider: script
-  script: "HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=testpypi sh ./scripts/pypi_deploy.sh"
-  on:
-    condition: $TRAVIS_PYTHON_VERSION = "3.6"
-  skip_cleanup: true
-- provider: script
-  script: "HOME=$TRAVIS_BUILD_DIR TWINE_REPOSITORY=pypi sh ./scripts/pypi_deploy.sh"
-  on:
-    tags: true
-    condition: $TRAVIS_PYTHON_VERSION = "3.6"
-  skip_cleanup: true
+- test "${TRAVIS_PULL_REQUEST}" == "false" && sh ./scripts/pypi_deploy.sh
 env:
   global:
   - TWINE_USERNAME=nihlaeth
