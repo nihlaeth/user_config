@@ -21,9 +21,10 @@ Badges
         :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Grade
 * .. image:: https://api.codacy.com/project/badge/Coverage/bd13a0474ea44c8e8a95e10ef4d89585
         :target: https://www.codacy.com/app/nihlaeth/user_config?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=nihlaeth/user_config&amp;utm_campaign=Badge_Coverage
+* .. image:: https://img.shields.io/github/tag/nihlaeth/user_config.svg
+        :target: https://github.com/nihlaeth/user_config/releases
 * .. image:: https://img.shields.io/pypi/v/user_config.svg
         :target: https://pypi.python.org/pypi?:action=display&name=user-config
-* .. image:: https://img.shields.io/github/tag/nihlaeth/user_config.svg   :target: https://github.com/nihlaeth/user_config/releases
 * .. image:: https://img.shields.io/pypi/l/user_config.svg
         :target: https://pypi.python.org/pypi?:action=display&name=user-config
 * .. image:: https://img.shields.io/pypi/pyversions/user_config.svg
