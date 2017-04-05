@@ -99,7 +99,7 @@ def ini_read(_, path, elements):
                         result.append(item[2:])
                     keys[key].set_value(result)
                 elif keys[key].type_ == str:
-                    value = config.get(section, key)
+                    value = str(config.get(section, key))
                     if value != '':
                         keys[key].set_value(value)
                 elif keys[key].type_ == int or keys[key].type_ == float:
