@@ -766,6 +766,8 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
         overwrite system global configuration path, defaults to None
     user_path: pathlib.Path, optional
         overwrite system user configuration path, defaults to None
+    cli: bool, optional
+        whether to parse commandline arguments, defaults to True
 
     Raises
     ------
@@ -806,7 +808,8 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
             self,
             file_name="config",
             global_path=None,
-            user_path=None):
+            user_path=None,
+            cli=True):
         if self.application is None:
             raise AttributeError(
                 'application not set, please provide an application name')
@@ -831,33 +834,36 @@ class Config(with_metaclass(ConfigMeta, MappingMixin)):
             "{}.{}".format(file_name, self._extension))
         if user_path.is_file():
             self._read(user_path, self._elements)
-        # construct a commandline parser
-        parser = argparse.ArgumentParser(
-            prog=self.application,
-            description="{}\n\n{}\n{}\n{}".format(
-                self.__doc__,
-                "Command line arguments overwrite configuration found in:",
-                user_path,
-                global_path))
-        parser.add_argument(
-            '--generate-config',
-            action='store_const',
-            const=True,
-            default=False,
-            required=False,
-            help="print a complete configuration file with current settings")
-        for element in self._elements:
-            self._elements[element].construct_parser(parser)
-        command_line_arguments = vars(parser.parse_args())
+        if cli:
+            # construct a commandline parser
+            parser = argparse.ArgumentParser(
+                prog=self.application,
+                description="{}\n\n{}\n{}\n{}".format(
+                    self.__doc__,
+                    "Command line arguments overwrite configuration found in:",
+                    user_path,
+                    global_path))
+            parser.add_argument(
+                '--generate-config',
+                action='store_const',
+                const=True,
+                default=False,
+                required=False,
+                help="print a complete configuration file with current settings")
+            for element in self._elements:
+                self._elements[element].construct_parser(parser)
+            command_line_arguments = vars(parser.parse_args())
 
-        # check if we should print a configuration file
-        if command_line_arguments['generate_config']:
-            self._write(self._elements, self.__doc__)
-            sys.exit(False)
+            # check if we should print a configuration file
+            if command_line_arguments['generate_config']:
+                self._write(self._elements, self.__doc__)
+                sys.exit(False)
 
-        # fetch command line argument data
+            # fetch command line argument data
+            for element in self._elements:
+                self._elements[element].extract_data_from_parser(
+                    command_line_arguments)
+
+        # validate _data
         for element in self._elements:
-            self._elements[element].extract_data_from_parser(
-                command_line_arguments)
-            # validate _data
             self._elements[element].validate_data()
