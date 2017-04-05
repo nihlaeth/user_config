@@ -55,6 +55,16 @@ def test_cli():
         user_path=config_directory / 'user')
     assert config.general.string == "cli"
 
+def test_no_cli():
+    config_directory = Path(__file__).parents[0] / 'test_config'
+    sys.argv = [sys.argv[0], 'invalid_argument']
+    config = FallbackConfig(
+        file_name="user",
+        global_path=config_directory / 'global',
+        user_path=config_directory / 'user',
+        cli=False)
+    assert config.general.string == "user"
+
 def test_required_attributes():
     class NoApplication(Config):
         """Test missing application attribute."""
