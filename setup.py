@@ -49,7 +49,7 @@ setup(
     setup_requires=['pytest-runner', 'vcversioner'],
     vcversioner={'version_file': 'VERSION', 'decrement_dev_version': False},
     tests_require=['pytest'],
-    install_requires=['appdirs>=1.4'],
+    install_requires=['appdirs>=1.4', 'six'],
     extras_require={
         ':python_version <= "3.3"': ['pathlib'],
         'deploy': [

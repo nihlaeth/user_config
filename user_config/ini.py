@@ -1,5 +1,6 @@
 """ini configuration file format."""
 import collections
+from six import string_types
 try:
     import configparser
 except ImportError:
@@ -45,7 +46,7 @@ def ini_validate(_, elements):
                 raise InvalidConfigTree(
                     'nested sections are not supported for ini files')
             if sub_elements[sub_element].type_ not in (
-                    str, int, float, bool, list):
+                    string_types[0], int, float, bool, list):
                 raise InvalidConfigTree(
                     'unsupported data type {}'.format(
                         sub_elements[sub_element].type_))
@@ -98,8 +99,8 @@ def ini_read(_, path, elements):
                                     config.get(section, key)))
                         result.append(item[2:])
                     keys[key].set_value(result)
-                elif keys[key].type_ == str:
-                    value = str(config.get(section, key))
+                elif issubclass(keys[key].type_, string_types):
+                    value = config.get(section, key)
                     if value != '':
                         keys[key].set_value(value)
                 elif keys[key].type_ == int or keys[key].type_ == float:

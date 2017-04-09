@@ -1,6 +1,8 @@
 """Test ConfigElement and subclasses."""
 import argparse
 import pytest
+from six import text_type
+
 
 from user_config import (
     ConfigElement,
@@ -78,7 +80,8 @@ class TestConfigElement(object):
         config_element.element_name = "test"
         parser = argparse.ArgumentParser(prog="test application")
         config_element.construct_parser(parser)
-        arguments = vars(parser.parse_args(['--test', 'success']))
+        arguments = vars(parser.parse_args(
+            ['--test', 'success']))
         assert arguments['test'] == 'success'
         config_element.extract_data_from_parser(arguments)
         assert config_element.get_value() == 'success'
@@ -98,7 +101,8 @@ class TestConfigElement(object):
         config_element.element_name = "test"
         parser = argparse.ArgumentParser(prog="test application")
         config_element.construct_parser(parser)
-        arguments = vars(parser.parse_args(['--test', 'success']))
+        arguments = vars(parser.parse_args(
+            ['--test', 'success']))
         assert arguments['testing'] == 'success'
         config_element.extract_data_from_parser(arguments)
         assert config_element.get_value() == 'success'
@@ -158,6 +162,7 @@ optional arguments:
         with pytest.raises(InvalidData):
             config_element.validate_data()
         config_element.validate("ok")
+        config_element.validate(text_type("ok"))
         config_element.set_value("ok")
         config_element.validate_data()
 

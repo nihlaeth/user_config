@@ -4,6 +4,7 @@ import collections
 from pathlib import Path
 import argparse
 from pkg_resources import iter_entry_points
+from six import string_types
 from appdirs import AppDirs
 
 def with_metaclass(meta, *bases):
@@ -225,7 +226,7 @@ class ConfigElement(object):
     """
     creation_counter = 0
     element_name = None
-    type_ = str
+    type_ = string_types[0]
     action = 'store'
     _value = None
 
@@ -304,12 +305,17 @@ class ConfigElement(object):
             name.append(self._long_name)
         else:
             name.append("--{}".format(self.element_name))
+        type_ = self.type_ if self.action == 'store' else self.subtype
+        # argparse attempts to convert, which does not end well with
+        # python2 basestr
+        if issubclass(type_, string_types):
+            type_ = str
         parser.add_argument(
             *name,
             action=self.action,
             #nargs=1,
             default=None,
-            type=self.type_ if self.action == 'store' else self.subtype,
+            type=type_,
             choices=None,
             required=False,
             help=self.doc)
@@ -455,7 +461,7 @@ class StringListOption(ConfigElement):
     """
 
     type_ = list
-    subtype = str
+    subtype = string_types[0]
     action = 'append'
 
     def __init__(
@@ -721,7 +727,7 @@ class StringOption(ConfigElement):
 
     """Configuration element with string value."""
 
-    type_ = str
+    type_ = string_types[0]
 
 class IntegerOption(ConfigElement):
 
